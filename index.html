@@ -27,7 +27,7 @@
                 <div class="bg-white/10 p-3 rounded-xl font-extrabold text-2xl border border-white/20 text-center w-14">TB</div>
                 <div>
                     <h1 class="text-2xl font-bold leading-tight text-white">Work Order Dispatch</h1>
-                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80 text-white">Certified Record of Authorization</p>
+                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80 text-white text-xs">Certified Record of Authorization</p>
                 </div>
             </div>
         </div>
@@ -48,7 +48,8 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     <div class="space-y-4">
                         <label class="text-blue-600 font-black">Route Locations (One per line)</label>
-                        <textarea id="locations" rows="6" placeholder="1. Start Address&#10;2. End Address"></textarea>
+                        <textarea id="locations" rows="6" placeholder="1. Start Address
+2. End Address"></textarea>
                         
                         <div class="bg-slate-900 rounded-2xl p-6 text-white flex justify-between items-center">
                             <div><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Mileage</p><span id="mileage_display" class="text-3xl font-black text-emerald-400">0.0</span></div>
@@ -75,7 +76,8 @@
                             </button>
                         </div>
 
-                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-3 text-sm text-slate-700"></div>
+                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-3 text-sm text-slate-700 font-medium">
+                            </div>
                         
                         <div id="disclosureText" class="p-4 bg-amber-50 rounded-xl border border-amber-100 text-[11px] text-amber-900 leading-relaxed font-medium">
                             <strong>Legal Authorization:</strong> By providing your digital signature, you formally accept this work order, the compensation listed, and the route logistics provided.
@@ -107,8 +109,8 @@
                 </div>
             </div>
 
-            <div id="auditTrail" class="hidden mt-10 pt-6 border-t border-slate-100 space-y-2 text-[8px] text-slate-400 font-mono uppercase text-slate-400">
-                <p class="font-bold text-blue-600 text-[10px] mb-2 text-blue-600">Verification Certificate</p>
+            <div id="auditTrail" class="hidden mt-10 pt-6 border-t border-slate-100 space-y-2 text-[8px] text-slate-400 font-mono uppercase">
+                <p class="font-bold text-blue-600 text-[10px] mb-2">Verification Certificate</p>
                 <div class="grid grid-cols-2 gap-4">
                     <div><p id="audit_id"></p><p id="audit_ts"></p></div>
                     <div class="text-right"><p id="audit_ua"></p></div>
@@ -157,14 +159,21 @@
 
         function launchGoogleMaps() {
             const params = new URLSearchParams(window.location.search);
-            const locs = JSON.parse(decodeURIComponent(params.get('locs')));
+            const rawLocs = params.get('locs');
+            if (!rawLocs) return alert("Route data missing.");
+            
+            const locs = rawLocs.split('|');
             const origin = encodeURIComponent(locs[0]);
             const dest = encodeURIComponent(locs[locs.length - 1]);
             const waypoints = encodeURIComponent(locs.slice(1, -1).join('|'));
+            
+            // Fixed URL Syntax
             window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`, '_blank');
         }
 
-        function updateSigPreview() { document.getElementById('sig_name_preview').innerText = document.getElementById('typed_sig').value || "the signatory"; }
+        function updateSigPreview() { 
+            document.getElementById('sig_name_preview').innerText = document.getElementById('typed_sig').value || "the signatory"; 
+        }
 
         window.onload = () => {
             initMap();
@@ -174,11 +183,12 @@
                 document.getElementById('icMode').classList.remove('hidden');
                 document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString();
                 
+                // DATA MAPPING FIX
                 document.getElementById('summaryZone').innerHTML = `
-                    <div class="flex justify-between"><strong>Contractor:</strong> <span class="font-bold">${params.get('icn')}</span></div>
-                    <div class="flex justify-between"><strong>Work Order ID:</strong> <span class="text-blue-600 font-bold">${params.get('wo')}</span></div>
-                    <div class="flex justify-between border-t pt-2 mt-2"><strong>Mileage:</strong> <span>${params.get('mi')} Miles</span></div>
-                    <div class="flex justify-between"><strong>Compensation:</strong> <span class="text-emerald-600 font-black">$${params.get('comp')}</span></div>
+                    <div class="flex justify-between"><strong>Contractor:</strong> <span>${params.get('icn') || 'N/A'}</span></div>
+                    <div class="flex justify-between"><strong>Work Order ID:</strong> <span class="text-blue-600 font-bold">${params.get('wo') || 'N/A'}</span></div>
+                    <div class="flex justify-between border-t pt-2 mt-2"><strong>Mileage Estimate:</strong> <span>${params.get('mi') || '0'} Miles</span></div>
+                    <div class="flex justify-between"><strong>Compensation:</strong> <span class="text-emerald-600 font-black">$${params.get('comp') || '0.00'}</span></div>
                 `;
             }
         };
@@ -192,7 +202,10 @@
             if (!icn || !ice || !wo || locList.length < 2) return alert("All fields are required.");
 
             const baseUrl = window.location.href.split('?')[0];
-            const link = `${baseUrl}?mode=sign&icn=${encodeURIComponent(icn)}&wo=${encodeURIComponent(wo)}&comp=${document.getElementById('comp').value}&due=${document.getElementById('due_date').value}&mi=${document.getElementById('mileage_display').innerText}&de=${encodeURIComponent(document.getElementById('d_email').value)}&locs=${encodeURIComponent(JSON.stringify(locList))}`;
+            // Using | separator instead of JSON for better URL stability
+            const locString = locList.join('|');
+            
+            const link = `${baseUrl}?mode=sign&icn=${encodeURIComponent(icn)}&wo=${encodeURIComponent(wo)}&comp=${document.getElementById('comp').value}&due=${document.getElementById('due_date').value}&mi=${document.getElementById('mileage_display').innerText}&de=${encodeURIComponent(document.getElementById('d_email').value)}&locs=${encodeURIComponent(locString)}`;
             
             navigator.clipboard.writeText(link);
             window.location.href = `mailto:${ice}?subject=Action Required: Work Order Verification WO#${wo}&body=Please review and authorize your dispatch here: ${link}`;
@@ -206,7 +219,7 @@
 
             const params = new URLSearchParams(window.location.search);
             const ts = new Date().toISOString();
-            const initials = params.get('icn').split(' ').map(n => n[0]).join('').toUpperCase();
+            const initials = (params.get('icn') || "IC").split(' ').map(n => n[0]).join('').toUpperCase();
             const txID = `${initials}-${Math.random().toString(36).substr(2, 6).toUpperCase()}-${params.get('wo')}`;
 
             document.getElementById('auditTrail').classList.remove('hidden');
