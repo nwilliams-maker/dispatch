@@ -22,10 +22,10 @@
 <body class="p-4 md:p-12">
 
     <div id="captureArea" class="max-w-4xl mx-auto form-card bg-white border border-gray-100">
-        <div class="brand-blue p-8 text-white flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="bg-white/10 p-3 rounded-xl font-extrabold text-2xl border border-white/20 text-center w-14">TB</div>
-                <div>
+        <div class="brand-blue p-8 text-white flex justify-between items-center text-white">
+            <div class="flex items-center gap-4 text-white">
+                <div class="bg-white/10 p-3 rounded-xl font-extrabold text-2xl border border-white/20 text-center w-14 text-white">TB</div>
+                <div class="text-white">
                     <h1 class="text-2xl font-bold leading-tight text-white">Work Order Dispatch</h1>
                     <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80 text-white">Certified Route Authorization</p>
                 </div>
@@ -73,8 +73,12 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     <div class="space-y-6">
                         <h3 class="text-sm font-black text-slate-800 uppercase border-b pb-2">Work Order Review</h3>
-                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4 text-sm text-slate-700">
-                            </div>
+                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4 text-sm text-slate-700"></div>
+                        
+                        <button type="button" onclick="openNav()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-lg text-[10px] uppercase tracking-widest no-print">
+                            🗺️ Open Optimized Route in Google Maps
+                        </button>
+
                         <div id="disclosureText" class="p-4 bg-amber-50 rounded-xl border border-amber-100 text-[11px] text-amber-900 leading-relaxed font-medium">
                             <strong>Legal Disclosure:</strong> By providing your digital signature, you formally accept this work order, the compensation listed, and the route logistics provided. 
                         </div>
@@ -116,7 +120,7 @@
             <div id="successView" class="hidden text-center py-12 space-y-4">
                 <div class="text-6xl text-slate-800">✅</div>
                 <h2 class="text-2xl font-bold uppercase text-slate-800">Verification Recorded</h2>
-                <p class="text-slate-500">Dispatch has been notified. Certified PDF saved.</p>
+                <p class="text-slate-500">Dispatch has been notified. Your certified PDF has been generated.</p>
             </div>
         </form>
     </div>
@@ -161,6 +165,13 @@
             document.getElementById('sig_name_preview').innerText = document.getElementById('typed_sig').value || "the signatory";
         }
 
+        function openNav() {
+            const params = new URLSearchParams(window.location.search);
+            const locs = JSON.parse(decodeURIComponent(params.get('locs')));
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(locs[0])}&destination=${encodeURIComponent(locs[locs.length-1])}&waypoints=${encodeURIComponent(locs.slice(1,-1).join('|'))}&travelmode=driving`;
+            window.open(url, '_blank');
+        }
+
         function runMapping() {
             const params = new URLSearchParams(window.location.search);
             const data = {
@@ -173,7 +184,7 @@
             };
 
             document.getElementById('summaryZone').innerHTML = `
-                <div class="flex justify-between"><strong>Contractor:</strong> <span class="font-bold">${data.icn || 'N/A'}</span></div>
+                <div class="flex justify-between"><strong>Contractor:</strong> <span class="font-bold text-slate-900">${data.icn || 'N/A'}</span></div>
                 <div class="flex justify-between"><strong>Work Order ID:</strong> <span class="text-blue-600 font-bold underline">${data.wo || 'N/A'}</span></div>
                 <div class="flex justify-between"><strong>Due Date:</strong> <span>${data.due || 'N/A'}</span></div>
                 <div class="flex justify-between border-t pt-2 mt-2"><strong>Mileage:</strong> <span>${data.miles || '0'} Miles</span></div>
@@ -198,12 +209,12 @@
             const icn = document.getElementById('ic_name_setup').value;
             const ice = document.getElementById('ic_email_setup').value;
             const wo = document.getElementById('task_num').value;
-            const mi = document.getElementById('mileage_display').innerText;
+            const locList = document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 2);
 
-            if (!dEmail || !icn || !wo) return alert("All dispatch fields are required.");
+            if (!dEmail || !icn || !wo || locList.length < 2) return alert("All fields including route are required.");
 
             const baseUrl = window.location.href.split('?')[0];
-            const link = `${baseUrl}?mode=sign&icn=${encodeURIComponent(icn)}&wo=${encodeURIComponent(wo)}&comp=${document.getElementById('comp').value}&due=${document.getElementById('due_date').value}&mi=${mi}&de=${encodeURIComponent(dEmail)}`;
+            const link = `${baseUrl}?mode=sign&icn=${encodeURIComponent(icn)}&wo=${encodeURIComponent(wo)}&comp=${document.getElementById('comp').value}&due=${document.getElementById('due_date').value}&mi=${document.getElementById('mileage_display').innerText}&de=${encodeURIComponent(dEmail)}&locs=${encodeURIComponent(JSON.stringify(locList))}`;
             
             navigator.clipboard.writeText(link);
             window.location.href = `mailto:${ice}?subject=Action Required: Work Order Verification WO#${wo}&body=Please review and authorize your dispatch here: ${link}`;
@@ -231,17 +242,19 @@
             formData.append('Work Order', params.get('wo'));
             formData.append('Contractor', params.get('icn'));
             formData.append('Compensation', params.get('comp'));
+            formData.append('Mileage', params.get('mi'));
             formData.append('Signatory', name);
             formData.append('Verification ID', txID);
+            formData.append('Legal Affirmation', `Agreed to terms on: ${ts}`);
             formData.append('_replyto', params.get('de'));
 
             try {
-                const response = await fetch('https://formspree.io/f/xgonzegv', { 
+                const response = await fetch('https://formspree.io/f/meerlqll', { 
                     method: 'POST', body: formData, headers: {'Accept': 'application/json'} 
                 });
 
                 if (response.ok) {
-                    html2pdf().set({ margin: 0.5, filename: `WO_AUTH_${params.get('wo')}.pdf`, jsPDF: { format: 'letter' } })
+                    html2pdf().set({ margin: 0.5, filename: `WO_CERT_${params.get('wo')}.pdf`, jsPDF: { format: 'letter' } })
                     .from(document.getElementById('captureArea')).save();
                     document.getElementById('icMode').style.display = 'none';
                     document.getElementById('successView').classList.remove('hidden');
