@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certified Dispatch | Terraboost</title>
+    <title>Work Order Dispatch | Terraboost</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDYgNIGcfWPxoux2EILXr60ZK0fZYJPR4&libraries=geometry"></script>
@@ -12,10 +12,10 @@
         body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
         .brand-blue { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
         .form-card { border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
-        #map, #staticMapContainer { height: 300px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; background-color: #f8fafc; }
+        #map { height: 300px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; }
         label { color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.65rem; display: block; margin-bottom: 4px; }
         input, textarea { border: 1px solid #e2e8f0; border-radius: 8px !important; padding: 10px; font-size: 14px; width: 100%; background: #ffffff; }
-        .signature-font { font-family: 'Dancing Script', cursive; font-size: 2.2rem; color: #1e293b; border-bottom: 2px solid #cbd5e1; background: transparent; width: 100%; }
+        .signature-font { font-family: 'Dancing Script', cursive; font-size: 2.5rem; color: #1e293b; border-bottom: 2px solid #cbd5e1; background: transparent; width: 100%; }
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
@@ -27,21 +27,21 @@
                 <div class="bg-white/10 p-3 rounded-xl font-extrabold text-2xl border border-white/20 text-center w-14">TB</div>
                 <div>
                     <h1 class="text-2xl font-bold leading-tight text-white">Work Order Dispatch</h1>
-                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80 text-white">Certified Logistics Authorization</p>
+                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80 text-white">Certified Record of Authorization</p>
                 </div>
             </div>
         </div>
 
-        <form id="dispatchForm" class="p-8 space-y-8">
+        <form id="dispatchForm" class="p-8 space-y-8 text-slate-800">
             
-            <div id="setupFields" class="space-y-6">
+            <div id="setupFields" class="space-y-6 no-print">
                 <h3 class="text-xs font-black text-blue-600 uppercase tracking-widest border-b border-blue-100 pb-3">1. Dispatch Configuration</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div><label>Dispatcher Email</label><input type="email" id="d_email" placeholder="logistics@terraboost.com"></div>
                     <div><label>Contractor Name</label><input type="text" id="ic_name_setup" placeholder="Full Name"></div>
                     <div><label>Contractor Email</label><input type="email" id="ic_email_setup" placeholder="worker@email.com"></div>
                     <div><label>Work Order #</label><input type="text" id="task_num" placeholder="WO-0000"></div>
-                    <div><label>Comp ($)</label><input type="number" id="comp" placeholder="0.00"></div>
+                    <div><label>Compensation ($)</label><input type="number" id="comp" placeholder="0.00"></div>
                     <div><label>Due Date</label><input type="date" id="due_date"></div>
                 </div>
 
@@ -51,20 +51,14 @@
                         <textarea id="locations" rows="6" placeholder="1. Start Address&#10;2. End Address"></textarea>
                         
                         <div class="bg-slate-900 rounded-2xl p-6 text-white flex justify-between items-center">
-                            <div>
-                                <p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Mileage</p>
-                                <span id="mileage_display" class="text-3xl font-black text-emerald-400">0.0</span>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Est. Drive Time</p>
-                                <span id="time_display" class="text-3xl font-black text-blue-400">--</span>
-                            </div>
+                            <div><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Mileage</p><span id="mileage_display" class="text-3xl font-black text-emerald-400">0.0</span></div>
+                            <div class="text-right"><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Drive Time</p><span id="time_display" class="text-3xl font-black text-blue-400">--</span></div>
                         </div>
                     </div>
                     <div><div id="map"></div></div>
                 </div>
 
-                <button type="button" onclick="generateCertifiedLink()" class="w-full brand-blue text-white font-bold py-4 rounded-xl shadow-lg text-xs uppercase tracking-widest active:scale-95 transition-transform">
+                <button type="button" onclick="generateCertifiedLink()" class="w-full brand-blue text-white font-bold py-4 rounded-xl shadow-lg text-xs uppercase tracking-widest">
                     🚀 Dispatch Certified Verification Link
                 </button>
             </div>
@@ -74,17 +68,14 @@
                     <div class="space-y-6">
                         <h3 class="text-sm font-black text-slate-800 uppercase border-b pb-2">Work Order Authorization</h3>
                         
-                        <div id="staticMapContainer" class="relative group cursor-pointer overflow-hidden rounded-xl border border-slate-200">
-                             <a id="navLink" target="_blank" class="block">
-                                <img id="staticMap" class="w-full h-full object-cover" alt="Route Map Awaiting Data...">
-                                <div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center group-hover:bg-slate-900/20 transition-all">
-                                    <span class="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold text-[10px] uppercase shadow-xl tracking-widest">Tap for Navigation</span>
-                                </div>
-                             </a>
+                        <div class="no-print">
+                            <button type="button" onclick="launchGoogleMaps()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95">
+                                <span class="text-lg">🗺️</span>
+                                <span class="text-sm uppercase tracking-widest">View Route</span>
+                            </button>
                         </div>
 
-                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-3 text-sm text-slate-700">
-                            </div>
+                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-3 text-sm text-slate-700"></div>
                         
                         <div id="disclosureText" class="p-4 bg-amber-50 rounded-xl border border-amber-100 text-[11px] text-amber-900 leading-relaxed font-medium">
                             <strong>Legal Authorization:</strong> By providing your digital signature, you formally accept this work order, the compensation listed, and the route logistics provided.
@@ -94,13 +85,13 @@
                     <div class="space-y-6">
                         <div>
                             <label class="text-blue-600 font-black">Electronic Signature</label>
-                            <input type="text" id="typed_sig" oninput="updateSigPreview()" placeholder="Full Legal Name" class="signature-font border-none focus:ring-0">
+                            <input type="text" id="typed_sig" oninput="updateSigPreview()" placeholder="Type Full Name" class="signature-font border-none focus:ring-0">
                         </div>
 
                         <div class="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
                             <input type="checkbox" id="legal_consent" class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 cursor-pointer">
                             <label for="legal_consent" class="normal-case font-medium text-[11px] text-slate-600 leading-tight cursor-pointer italic">
-                                I certify that I have reviewed the route and work order details and formally authorize this task.
+                                I certify that I have reviewed the work order details and formally authorize this task.
                             </label>
                         </div>
 
@@ -109,15 +100,15 @@
                             <span id="dateDisplay" class="font-bold text-slate-800 text-sm"></span>
                         </div>
 
-                        <button type="button" id="submitBtn" onclick="submitAuthorization()" class="w-full bg-blue-600 text-white font-bold py-5 rounded-xl shadow-lg text-xs uppercase tracking-widest hover:bg-blue-700 transition-all">
+                        <button type="button" id="submitBtn" onclick="submitAuthorization()" class="w-full bg-blue-600 text-white font-bold py-5 rounded-xl shadow-lg text-xs uppercase tracking-widest">
                             Confirm Work Order & Secure Record
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div id="auditTrail" class="hidden mt-10 pt-6 border-t border-slate-100 space-y-2 text-[8px] text-slate-400 font-mono uppercase">
-                <p class="font-bold text-blue-600 text-[10px] mb-2">Digital Signature Verification Certificate</p>
+            <div id="auditTrail" class="hidden mt-10 pt-6 border-t border-slate-100 space-y-2 text-[8px] text-slate-400 font-mono uppercase text-slate-400">
+                <p class="font-bold text-blue-600 text-[10px] mb-2 text-blue-600">Verification Certificate</p>
                 <div class="grid grid-cols-2 gap-4">
                     <div><p id="audit_id"></p><p id="audit_ts"></p></div>
                     <div class="text-right"><p id="audit_ua"></p></div>
@@ -127,14 +118,13 @@
             <div id="successView" class="hidden text-center py-12 space-y-4">
                 <div class="text-6xl text-slate-800">✅</div>
                 <h2 class="text-2xl font-bold uppercase text-slate-800">Verification Recorded</h2>
-                <p class="text-slate-500">Dispatch has been notified. Your certified PDF has been generated.</p>
+                <p class="text-slate-500">Dispatch notified. PDF generated.</p>
             </div>
         </form>
     </div>
 
     <script>
         let map, directionsService, directionsRenderer;
-        const API_KEY = 'AIzaSyCDYgNIGcfWPxoux2EILXr60ZK0fZYJPR4';
         
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), { 
@@ -150,88 +140,69 @@
             const lines = document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 5);
             if (lines.length < 2) return;
             directionsService.route({
-                origin: lines[0],
-                destination: lines[lines.length - 1],
+                origin: lines[0], destination: lines[lines.length - 1],
                 waypoints: lines.slice(1, -1).map(loc => ({ location: loc, stopover: true })),
-                optimizeWaypoints: true,
-                travelMode: google.maps.TravelMode.DRIVING,
-                unitSystem: google.maps.UnitSystem.IMPERIAL
+                optimizeWaypoints: true, travelMode: google.maps.TravelMode.DRIVING, unitSystem: google.maps.UnitSystem.IMPERIAL
             }, (result, status) => {
                 if (status === "OK") {
                     directionsRenderer.setDirections(result);
                     let meters = 0, seconds = 0;
                     result.routes[0].legs.forEach(leg => { meters += leg.distance.value; seconds += leg.duration.value; });
                     document.getElementById('mileage_display').innerText = (meters * 0.000621371).toFixed(1);
-                    const h = Math.floor(seconds / 3600);
-                    const m = Math.floor((seconds % 3600) / 60);
+                    const h = Math.floor(seconds / 3600); const m = Math.floor((seconds % 3600) / 60);
                     document.getElementById('time_display').innerText = h > 0 ? h + "h " + m + "m" : m + "m";
                 }
             });
         }
 
-        function updateSigPreview() {
-            document.getElementById('sig_name_preview').innerText = document.getElementById('typed_sig').value || "the signatory";
+        function launchGoogleMaps() {
+            const params = new URLSearchParams(window.location.search);
+            const locs = JSON.parse(decodeURIComponent(params.get('locs')));
+            const origin = encodeURIComponent(locs[0]);
+            const dest = encodeURIComponent(locs[locs.length - 1]);
+            const waypoints = encodeURIComponent(locs.slice(1, -1).join('|'));
+            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`, '_blank');
         }
 
-        function buildDataReview(params) {
-            document.getElementById('summaryZone').innerHTML = `
-                <div class="flex justify-between"><strong>Contractor:</strong> <span class="font-bold text-slate-900">${params.get('icn') || 'N/A'}</span></div>
-                <div class="flex justify-between"><strong>Work Order ID:</strong> <span class="text-blue-600 font-bold underline underline-offset-4">${params.get('wo') || 'N/A'}</span></div>
-                <div class="flex justify-between"><strong>Due Date:</strong> <span>${params.get('due') || 'N/A'}</span></div>
-                <div class="flex justify-between border-t pt-2 mt-2"><strong>Authorized Mileage:</strong> <span>${params.get('mi') || '0.0'} Miles</span></div>
-                <div class="flex justify-between"><strong>Compensation:</strong> <span class="text-emerald-600 font-black text-lg">$${params.get('comp') || '0.00'}</span></div>
-            `;
-        }
+        function updateSigPreview() { document.getElementById('sig_name_preview').innerText = document.getElementById('typed_sig').value || "the signatory"; }
 
         window.onload = () => {
             initMap();
             const params = new URLSearchParams(window.location.search);
             if (params.get('mode') === 'sign') {
-                document.getElementById('setupFields').classList.add('hidden');
+                document.getElementById('setupFields').remove();
                 document.getElementById('icMode').classList.remove('hidden');
                 document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString();
                 
-                // FIXED DATA MAPPING
-                buildDataReview(params);
-                
-                // FIXED STATIC MAP MAPPING
-                const locs = JSON.parse(decodeURIComponent(params.get('locs')));
-                const origin = locs[0];
-                const dest = locs[locs.length-1];
-                const stops = locs.slice(1, -1).join('|');
-
-                const staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=640x320&scale=2&markers=color:blue|label:S|${encodeURIComponent(origin)}&markers=color:red|label:E|${encodeURIComponent(dest)}&path=color:0x3b82f6|weight:5|${encodeURIComponent(locs.join('|'))}&key=${API_KEY}`;
-                document.getElementById('staticMap').src = staticUrl;
-
-                // NAV LINK
-                document.getElementById('navLink').href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&waypoints=${encodeURIComponent(stops)}&travelmode=driving`;
+                document.getElementById('summaryZone').innerHTML = `
+                    <div class="flex justify-between"><strong>Contractor:</strong> <span class="font-bold">${params.get('icn')}</span></div>
+                    <div class="flex justify-between"><strong>Work Order ID:</strong> <span class="text-blue-600 font-bold">${params.get('wo')}</span></div>
+                    <div class="flex justify-between border-t pt-2 mt-2"><strong>Mileage:</strong> <span>${params.get('mi')} Miles</span></div>
+                    <div class="flex justify-between"><strong>Compensation:</strong> <span class="text-emerald-600 font-black">$${params.get('comp')}</span></div>
+                `;
             }
         };
 
         function generateCertifiedLink() {
-            const dEmail = document.getElementById('d_email').value;
             const icn = document.getElementById('ic_name_setup').value;
             const ice = document.getElementById('ic_email_setup').value;
             const wo = document.getElementById('task_num').value;
             const locList = document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 5);
 
-            if (!dEmail || !icn || !wo || locList.length < 2) return alert("Required fields or route addresses are incomplete.");
+            if (!icn || !ice || !wo || locList.length < 2) return alert("All fields are required.");
 
             const baseUrl = window.location.href.split('?')[0];
-            const link = `${baseUrl}?mode=sign&icn=${encodeURIComponent(icn)}&wo=${encodeURIComponent(wo)}&comp=${document.getElementById('comp').value}&due=${document.getElementById('due_date').value}&mi=${document.getElementById('mileage_display').innerText}&de=${encodeURIComponent(dEmail)}&locs=${encodeURIComponent(JSON.stringify(locList))}`;
+            const link = `${baseUrl}?mode=sign&icn=${encodeURIComponent(icn)}&wo=${encodeURIComponent(wo)}&comp=${document.getElementById('comp').value}&due=${document.getElementById('due_date').value}&mi=${document.getElementById('mileage_display').innerText}&de=${encodeURIComponent(document.getElementById('d_email').value)}&locs=${encodeURIComponent(JSON.stringify(locList))}`;
             
             navigator.clipboard.writeText(link);
             window.location.href = `mailto:${ice}?subject=Action Required: Work Order Verification WO#${wo}&body=Please review and authorize your dispatch here: ${link}`;
-            alert("Certified Link Copied!");
         }
 
         async function submitAuthorization() {
             const name = document.getElementById('typed_sig').value;
-            const consent = document.getElementById('legal_consent').checked;
-            if (!name || !consent) return alert("Signature and legal consent required.");
-
+            if (!name || !document.getElementById('legal_consent').checked) return alert("Signature and consent required.");
             const btn = document.getElementById('submitBtn');
-            btn.disabled = true; btn.innerText = "Securing Authorization...";
+            btn.disabled = true; btn.innerText = "Securing Certificate...";
 
             const params = new URLSearchParams(window.location.search);
             const ts = new Date().toISOString();
@@ -241,31 +212,20 @@
             document.getElementById('auditTrail').classList.remove('hidden');
             document.getElementById('audit_id').innerText = `ID: ${txID}`;
             document.getElementById('audit_ts').innerText = `TS: ${ts}`;
-            document.getElementById('audit_ua').innerText = `System: ${navigator.userAgent.substring(0, 45)}...`;
+            document.getElementById('audit_ua').innerText = `ENV: ${navigator.userAgent.substring(0, 40)}...`;
 
             const formData = new FormData();
-            formData.append('Work Order #', params.get('wo'));
-            formData.append('Contractor Name', params.get('icn'));
-            formData.append('Signatory', name);
-            formData.append('Compensation', params.get('comp'));
-            formData.append('Mileage', params.get('mi'));
+            formData.append('Work Order', params.get('wo'));
+            formData.append('Contractor', params.get('icn'));
             formData.append('Verification ID', txID);
             formData.append('_replyto', params.get('de'));
 
             try {
-                const response = await fetch('https://formspree.io/f/meerlqll', { 
-                    method: 'POST', body: formData, headers: {'Accept': 'application/json'} 
-                });
-
-                if (response.ok) {
-                    html2pdf().set({ margin: 0.5, filename: `WO_CERT_${params.get('wo')}.pdf`, jsPDF: { format: 'letter' } })
-                    .from(document.getElementById('captureArea')).save();
-                    document.getElementById('icMode').style.display = 'none';
-                    document.getElementById('successView').classList.remove('hidden');
-                }
-            } catch (error) {
-                alert("Submission failed."); btn.disabled = false;
-            }
+                await fetch('https://formspree.io/f/meerlqll', { method: 'POST', body: formData, headers: {'Accept': 'application/json'} });
+                html2pdf().set({ margin: 0.5, filename: `WO_CERT_${params.get('wo')}.pdf`, jsPDF: { format: 'letter' } }).from(document.getElementById('captureArea')).save();
+                document.getElementById('icMode').style.display = 'none';
+                document.getElementById('successView').classList.remove('hidden');
+            } catch (e) { btn.disabled = false; }
         }
     </script>
 </body>
