@@ -22,12 +22,12 @@
 <body class="p-4 md:p-12">
 
     <div id="captureArea" class="max-w-4xl mx-auto form-card bg-white border border-gray-100">
-        <div class="brand-blue p-8 text-white flex justify-between items-center no-print">
-            <div class="flex items-center gap-4">
+        <div class="brand-blue p-8 text-white flex justify-between items-center no-print text-white">
+            <div class="flex items-center gap-4 text-white">
                 <div class="bg-white/10 p-3 rounded-xl font-extrabold text-2xl border border-white/20 text-center w-14">TB</div>
-                <div>
-                    <h1 class="text-2xl font-bold leading-tight">Work Order Dispatch</h1>
-                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80">Certified Record of Authorization</p>
+                <div class="text-white">
+                    <h1 class="text-2xl font-bold leading-tight text-white">Work Order Dispatch</h1>
+                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80 text-white">Certified Record of Authorization</p>
                 </div>
             </div>
         </div>
@@ -48,7 +48,8 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     <div class="space-y-4">
                         <label class="text-blue-600 font-black">Route Locations (One per line)</label>
-                        <textarea id="locations" rows="6" placeholder="1. Start Address&#10;2. End Address"></textarea>
+                        <textarea id="locations" rows="6" placeholder="1. Start Address
+2. End Address"></textarea>
                         
                         <div class="bg-slate-900 rounded-2xl p-6 text-white flex justify-between items-center shadow-xl">
                             <div><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Mileage</p><span id="mileage_display" class="text-3xl font-black text-emerald-400">0.0</span></div>
@@ -153,7 +154,9 @@
 
         function viewRoute() {
             const params = new URLSearchParams(window.location.search);
-            const stops = params.get('locs').split('|');
+            const locs = params.get('locs');
+            if (!locs) return alert("Route data unavailable.");
+            const stops = locs.split('|');
             const origin = encodeURIComponent(stops[0]);
             const dest = encodeURIComponent(stops[stops.length - 1]);
             const waypoints = encodeURIComponent(stops.slice(1, -1).join('|'));
@@ -199,14 +202,18 @@
         async function submitAuthorization() {
             const name = document.getElementById('typed_sig').value;
             if (!name || !document.getElementById('legal_consent').checked) return alert("Signature and consent required.");
+            
             const btn = document.getElementById('submitBtn');
-            btn.disabled = true; btn.innerText = "Securing Certificate...";
+            btn.disabled = true; 
+            btn.innerText = "Securing Certificate...";
 
             const params = new URLSearchParams(window.location.search);
             const ts = new Date().toISOString();
             const txID = `CERT-${params.get('wo')}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
-            document.getElementById('auditTrail').classList.remove('hidden');
+            // Reveal audit trail for PDF capture
+            const audit = document.getElementById('auditTrail');
+            audit.classList.remove('hidden');
             document.getElementById('audit_id').innerText = `ID: ${txID}`;
             document.getElementById('audit_ts').innerText = `TS: ${ts}`;
             document.getElementById('audit_ua').innerText = `ENV: ${navigator.userAgent.substring(0, 40)}...`;
@@ -219,11 +226,28 @@
             formData.append('_replyto', params.get('de'));
 
             try {
-                await fetch('https://formspree.io/f/meerlqll', { method: 'POST', body: formData, headers: {'Accept': 'application/json'} });
-                html2pdf().set({ margin: 0.5, filename: `WO_CERT_${params.get('wo')}.pdf`, jsPDF: { format: 'letter' } }).from(document.getElementById('captureArea')).save();
+                // Send data to Formspree
+                await fetch('https://formspree.io/f/meerlqll', { 
+                    method: 'POST', 
+                    body: formData, 
+                    headers: {'Accept': 'application/json'} 
+                });
+
+                // Generate and save PDF
+                await html2pdf().set({ 
+                    margin: 0.5, 
+                    filename: `WO_CERT_${params.get('wo')}.pdf`, 
+                    jsPDF: { format: 'letter' } 
+                }).from(document.getElementById('captureArea')).save();
+
+                // Clear UI only after success
                 document.getElementById('icMode').style.display = 'none';
                 document.getElementById('successView').classList.remove('hidden');
-            } catch (e) { btn.disabled = false; }
+            } catch (e) { 
+                btn.disabled = false; 
+                btn.innerText = "Confirm Work Order & Secure Record";
+                alert("Submission failed. Please try again.");
+            }
         }
     </script>
 </body>
