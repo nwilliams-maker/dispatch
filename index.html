@@ -92,10 +92,15 @@
                             </label>
                         </div>
 
-                        <button type="button" id="navBtn" onclick="viewRoute()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-4 no-print transition-all">
-                            <span>🗺️</span>
-                            <span class="text-xs uppercase tracking-widest">Launch Optimized Navigation</span>
-                        </button>
+                        <div class="no-print">
+                            <button type="button" id="navBtn" onclick="viewRoute()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-4 transition-all">
+                                <span>🗺️</span>
+                                <span class="text-xs uppercase tracking-widest">Launch Optimized Navigation</span>
+                            </button>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-2 text-center">
+                                * Note: Google Maps limits mobile navigation to the first 11 stops.
+                            </p>
+                        </div>
 
                         <div id="summaryZone" class="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4 shadow-sm text-sm"></div>
                     </div>
@@ -264,26 +269,27 @@
             document.getElementById('submitBtn').className = c === 'Accepted' ? "bg-blue-600 text-white font-black px-12 py-5 rounded-2xl shadow-xl text-xs uppercase" : "bg-red-600 text-white font-black px-12 py-5 rounded-2xl shadow-xl text-xs uppercase";
         }
 
-       function viewRoute() {
+        function viewRoute() {
             if (!window.payloadData || !window.payloadData.locs) return alert("Route data missing.");
             
             const stops = window.payloadData.locs.split('|');
             if (stops.length < 2) return alert("Insufficient stops to navigate.");
 
-            const origin = encodeURIComponent(stops[0]);
-            const destination = encodeURIComponent(stops[stops.length - 1]);
+            // FIX: Consumer Google Maps limits waypoints. Partial route slice to ensure the app opens.
+            const partialStops = stops.slice(0, 11);
+            const origin = encodeURIComponent(partialStops[0]);
+            const destination = encodeURIComponent(partialStops[partialStops.length - 1]);
             
-            // Fix: Google Maps standard URLs often limit waypoints. 
-            // We use the 'dir' action which is more reliable for 10+ stops.
             let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
             
-            if (stops.length > 2) {
-                const waypoints = stops.slice(1, -1).join('|');
+            if (partialStops.length > 2) {
+                const waypoints = partialStops.slice(1, -1).join(',');
                 url += `&waypoints=${encodeURIComponent(waypoints)}`;
             }
             
             window.open(url, '_blank');
         }
+
         window.onload = () => {
             initMap();
             const params = new URLSearchParams(window.location.search);
@@ -324,8 +330,6 @@
             const formData = new FormData();
             
             formData.append('_subject', `OFFICIAL RECEIPT: WO ${window.payloadData.wo} ${status.toUpperCase()} | Terraboost Media`);
-            
-            // KEY FIX: Re-adding _replyto ensure Contractor receives the receipt via Formspree
             formData.append('_replyto', window.payloadData.ice); 
             
             formData.append('Contractor Name', window.payloadData.icn);
