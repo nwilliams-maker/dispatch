@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Work Order Dispatch | Terraboost Media</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDYgNIGcfWPxoux2EILXr60ZK0fZYJPR4&libraries=geometry"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
@@ -340,7 +339,6 @@
             
             try {
                 await fetch('https://formspree.io/f/meerlqll', { method: 'POST', body: formData, headers: {'Accept': 'application/json'} });
-                if (status === 'Accepted') await html2pdf().set({ margin: 0.5, filename: `TBM_CERT_${window.payloadData.wo}.pdf` }).from(document.getElementById('captureArea')).save();
                 document.getElementById('icMode').style.display = 'none';
                 document.getElementById('successView').classList.remove('hidden');
             } catch (e) { 
