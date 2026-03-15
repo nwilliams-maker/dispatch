@@ -17,11 +17,10 @@
         .signature-font { font-family: 'Dancing Script', cursive; font-size: 3rem; color: #0f172a; border-bottom: 2px solid #94a3b8; background: transparent; width: 100%; padding: 0; height: auto; line-height: 1; }
         .status-pill { transition: all 0.2s; cursor: pointer; border: 2px solid #e2e8f0; }
         input[type="radio"]:checked + .status-pill { border-color: currentColor; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        
         .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #3b82f6; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         @media print { .no-print { display: none !important; } }
+        .copy-success { border-color: #10b981 !important; color: #10b981 !important; background-color: #f0fdf4 !important; }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -40,7 +39,6 @@
         </div>
 
         <form id="dispatchForm" class="p-8 md:p-12 space-y-10">
-            
             <div id="setupFields" class="space-y-8">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div><label>Dispatcher Email</label><input type="email" id="d_email" placeholder="installteam@terraboost.biz" required></div>
@@ -92,13 +90,19 @@
                             </label>
                         </div>
 
-                        <div class="no-print">
+                        <div class="space-y-3 no-print">
                             <button type="button" id="navBtn" onclick="viewRoute()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg flex items-center justify-center gap-4 transition-all">
                                 <span>🗺️</span>
-                                <span class="text-xs uppercase tracking-widest">Launch Optimized Navigation</span>
+                                <span class="text-xs uppercase tracking-widest">View Route Preview</span>
                             </button>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-2 text-center">
-                                * Opens in browser to support up to 25 stops.
+                            
+                            <button type="button" id="copyBtn" onclick="copyMapUrl()" class="w-full bg-white border-2 border-slate-200 text-slate-600 font-black py-3 rounded-xl text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
+                                <span id="copyIcon">🔗</span>
+                                <span id="copyText">Copy Browser Link (Full Route)</span>
+                            </button>
+
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tight text-center leading-relaxed">
+                                * The Maps app may hide stops on long routes. To see all 25 locations, click "Copy Browser Link" and paste it manually into Chrome or Safari.
                             </p>
                         </div>
 
@@ -171,59 +175,64 @@
             clearTimeout(throttle);
             const loader = document.getElementById('loaderOverlay');
             const progressText = document.getElementById('progressText');
-            
             throttle = setTimeout(async () => {
                 const lines = document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 5);
                 if (lines.length < 2) return;
-                
-                loader.classList.remove('hidden');
-                loader.classList.add('flex');
-                
+                loader.classList.remove('hidden'); loader.classList.add('flex');
                 let totalM = 0, totalS = 0;
                 const batchSize = 25;
-                const totalBatches = Math.ceil((lines.length - 1) / batchSize);
-
-                try {
-                    for (let i = 0; i < lines.length - 1; i += batchSize) {
-                        const currentBatch = Math.floor(i / batchSize) + 1;
-                        progressText.innerText = `Syncing Batch ${currentBatch} of ${totalBatches}...`;
-                        
-                        const chunk = lines.slice(i, i + batchSize + 1);
-                        const req = {
-                            origin: chunk[0],
-                            destination: chunk[chunk.length-1],
-                            waypoints: chunk.slice(1,-1).map(l => ({location: l, stopover: true})),
-                            optimizeWaypoints: true,
-                            travelMode: google.maps.TravelMode.DRIVING,
-                            drivingOptions: { departureTime: new Date(), trafficModel: google.maps.TrafficModel.BEST_GUESS }
-                        };
-
-                        const result = await new Promise((resolve, reject) => {
-                            directionsService.route(req, (res, stat) => {
-                                if (stat === 'OK') resolve(res);
-                                else reject(stat);
-                            });
-                        });
-
-                        if (i === 0) directionsRenderer.setDirections(result);
-                        result.routes[0].legs.forEach(leg => { 
-                            totalM += leg.distance.value; 
-                            totalS += (leg.duration_in_traffic ? leg.duration_in_traffic.value : leg.duration.value); 
-                        });
-                        
-                        if (totalBatches > 1) await new Promise(r => setTimeout(r, 600));
-                    }
-
-                    document.getElementById('mileage_display').innerText = (totalM * 0.000621371).toFixed(1);
-                    const h = Math.floor(totalS / 3600), m = Math.floor((totalS % 3600) / 60);
-                    document.getElementById('time_display').innerText = h > 0 ? h+"h "+m+"m" : m+"m";
-                } catch (e) {
-                    console.error("Routing error:", e);
-                } finally {
-                    loader.classList.add('hidden');
-                    loader.classList.remove('flex');
+                for (let i = 0; i < lines.length - 1; i += batchSize) {
+                    const chunk = lines.slice(i, i + batchSize + 1);
+                    const req = {
+                        origin: chunk[0], destination: chunk[chunk.length-1],
+                        waypoints: chunk.slice(1,-1).map(l => ({location: l, stopover: true})),
+                        optimizeWaypoints: true, travelMode: google.maps.TravelMode.DRIVING
+                    };
+                    const result = await new Promise((res, rej) => directionsService.route(req, (r, s) => s === 'OK' ? res(r) : rej(s)));
+                    if (i === 0) directionsRenderer.setDirections(result);
+                    result.routes[0].legs.forEach(leg => { totalM += leg.distance.value; totalS += leg.duration.value; });
                 }
+                document.getElementById('mileage_display').innerText = (totalM * 0.000621371).toFixed(1);
+                const h = Math.floor(totalS / 3600), m = Math.floor((totalS % 3600) / 60);
+                document.getElementById('time_display').innerText = h > 0 ? h+"h "+m+"m" : m+"m";
+                loader.classList.add('hidden');
             }, 800);
+        }
+
+        function buildMapsUrl() {
+            if (!window.payloadData || !window.payloadData.locs) return null;
+            const stops = window.payloadData.locs.split('|').slice(0, 25);
+            const origin = encodeURIComponent(stops[0]);
+            const dest = encodeURIComponent(stops[stops.length-1]);
+            const waypoints = encodeURIComponent(stops.slice(1,-1).join(','));
+            return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`;
+        }
+
+        function viewRoute() {
+            const url = buildMapsUrl();
+            if (url) window.open(url, '_blank');
+            else alert("Route missing");
+        }
+
+        function copyMapUrl() {
+            const url = buildMapsUrl();
+            if (url) {
+                navigator.clipboard.writeText(url);
+                
+                const btn = document.getElementById('copyBtn');
+                const text = document.getElementById('copyText');
+                const icon = document.getElementById('copyIcon');
+
+                btn.classList.add('copy-success');
+                text.innerText = "Link Copied to Clipboard!";
+                icon.innerText = "✅";
+
+                setTimeout(() => {
+                    btn.classList.remove('copy-success');
+                    text.innerText = "Copy Browser Link (Full Route)";
+                    icon.innerText = "🔗";
+                }, 3000);
+            }
         }
 
         function generateCertifiedLink() {
@@ -238,55 +247,17 @@
                 due: document.getElementById('due_date').value,
                 locs: document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 2).join('|')
             };
-
-            if (!d.de || !d.icn || !d.wo || !d.comp || !d.due || d.mi === "0.0") return alert("Configuration incomplete.");
-
+            if (!d.de || !d.icn || !d.wo || !d.comp || !d.due || d.mi === "0.0") return alert("Incomplete data.");
             const payload = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
             const link = `${window.location.origin}${window.location.pathname}?data=${payload}`;
-            
             navigator.clipboard.writeText(link);
-            
-            const subject = encodeURIComponent(`Action Required: Route Request | WO #${d.wo}`);
-            const body = encodeURIComponent(
-                `Dear ${d.icn},\n\n` +
-                `A professionally optimized route has been finalized for your upcoming TBM assignment request.\n\n` +
-                `WORK ORDER SUMMARY:\n` +
-                `• WO ID: ${d.wo}\n` +
-                `• Due Date: ${d.due}\n\n` +
-                `Review and formally authorize your optimized TBM route here:\n\n` +
-                `${link}\n\n` +
-                `Regards,\n` +
-                `Terraboost Media Dispatch`
-            );
-
-            window.location.href = `mailto:${d.ice}?subject=${subject}&body=${body}`;
-            alert("TBM Dispatch Link Copied!");
+            window.location.href = `mailto:${d.ice}?subject=WO ${d.wo} Route Authorization&body=Review here: ${link}`;
+            alert("Dispatcher link copied!");
         }
 
         function toggleDecision(c) {
             document.getElementById('acceptFields').classList.toggle('hidden', c === 'Declined');
             document.getElementById('declineFields').classList.toggle('hidden', c === 'Accepted');
-            document.getElementById('submitBtn').className = c === 'Accepted' ? "bg-blue-600 text-white font-black px-12 py-5 rounded-2xl shadow-xl text-xs uppercase" : "bg-red-600 text-white font-black px-12 py-5 rounded-2xl shadow-xl text-xs uppercase";
-        }
-
-        function viewRoute() {
-            if (!window.payloadData || !window.payloadData.locs) return alert("Route data missing.");
-            
-            const stops = window.payloadData.locs.split('|');
-            if (stops.length < 2) return alert("Insufficient stops to navigate.");
-
-            // Pull up to 25 stops
-            const partialStops = stops.slice(0, 25);
-            const origin = encodeURIComponent(partialStops[0]);
-            const destination = encodeURIComponent(partialStops[partialStops.length - 1]);
-            const waypoints = encodeURIComponent(partialStops.slice(1, -1).join(','));
-            
-            const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
-
-            // FORCE BROWSER HACK: Wrap in a Google Search redirect
-            const forceBrowserUrl = `https://www.google.com/url?q=${encodeURIComponent(mapsUrl)}`;
-            
-            window.open(forceBrowserUrl, '_blank');
         }
 
         window.onload = () => {
@@ -294,72 +265,40 @@
             const params = new URLSearchParams(window.location.search);
             const raw = params.get('data');
             if (raw) {
-                try {
-                    const d = JSON.parse(decodeURIComponent(escape(atob(raw))));
-                    document.getElementById('setupFields').remove();
-                    document.getElementById('icMode').classList.remove('hidden');
-                    document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString();
-                    
-                    document.getElementById('summaryZone').innerHTML = `
-                        <div class="flex justify-between border-b pb-2 mb-2 font-bold"><span>Contractor:</span> <span>${d.icn}</span></div>
-                        <div class="flex justify-between text-blue-600 font-black"><span>Work Order #:</span> <span>${d.wo}</span></div>
-                        <div class="flex justify-between"><span>Optimized Mileage:</span> <span>${d.mi} Miles</span></div>
-                        <div class="flex justify-between text-slate-500 italic"><span>Estimated Time:</span> <span>${d.time}</span></div>
-                        <div class="flex justify-between"><span>Execution Due:</span> <span>${d.due}</span></div>
-                        <div class="flex justify-between border-t pt-2 mt-2 font-black text-xl text-emerald-600"><span>Total Comp:</span> <span>$${d.comp}</span></div>
-                    `;
-                    window.payloadData = d;
-                } catch(e) { console.error("Mapping Error"); }
+                const d = JSON.parse(decodeURIComponent(escape(atob(raw))));
+                document.getElementById('setupFields').remove();
+                document.getElementById('icMode').classList.remove('hidden');
+                document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString();
+                document.getElementById('summaryZone').innerHTML = `
+                    <div class="flex justify-between border-b pb-2 mb-2 font-bold"><span>Contractor:</span> <span>${d.icn}</span></div>
+                    <div class="flex justify-between text-blue-600 font-black"><span>Work Order #:</span> <span>${d.wo}</span></div>
+                    <div class="flex justify-between"><span>Mileage:</span> <span>${d.mi} Miles</span></div>
+                    <div class="flex justify-between"><span>Due:</span> <span>${d.due}</span></div>
+                    <div class="flex justify-between border-t pt-2 mt-2 font-black text-xl text-emerald-600"><span>Comp:</span> <span>$${d.comp}</span></div>
+                `;
+                window.payloadData = d;
             }
         };
 
         async function submitAuthorization() {
             const status = document.querySelector('input[name="status"]:checked').value;
             const name = document.getElementById('typed_sig').value;
-            const declineReason = document.getElementById('decline_reason').value;
-            const counterOffer = document.getElementById('counter_comp').value;
-
-            if (status === 'Accepted' && (!name || !document.getElementById('legal_consent').checked)) return alert("Full signature required.");
-            if (status === 'Declined' && !declineReason) return alert("Please provide a reason for declining.");
-
+            if (status === 'Accepted' && (!name || !document.getElementById('legal_consent').checked)) return alert("Signature required.");
+            
             const btn = document.getElementById('submitBtn');
             btn.disabled = true; btn.innerText = "Submitting...";
-
-            const txID = `TBM-${window.payloadData.wo}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
             const formData = new FormData();
-            
-            formData.append('_subject', `OFFICIAL RECEIPT: WO ${window.payloadData.wo} ${status.toUpperCase()} | Terraboost Media`);
-            formData.append('_replyto', window.payloadData.ice); 
-            
-            formData.append('Contractor Name', window.payloadData.icn);
-            formData.append('Contractor Email', window.payloadData.ice);
-            formData.append('Work Order #', window.payloadData.wo);
-            formData.append('Final Decision', status);
-            formData.append('Route Mileage', window.payloadData.mi + " Miles");
-            formData.append('Est Drive Time', window.payloadData.time);
-            formData.append('Compensation', "$" + window.payloadData.comp);
-            formData.append('Deadline', window.payloadData.due);
-            
-            if (status === 'Accepted') {
-                formData.append('Digital Signature', name);
-                formData.append('Legal Acknowledgment', 'Confirmed');
-            } else {
-                formData.append('Rejection Reason', declineReason);
-                formData.append('Counter Offer', counterOffer ? "$" + counterOffer : "No Counter");
-            }
-
-            formData.append('Verification ID', txID);
+            formData.append('Contractor', window.payloadData.icn);
+            formData.append('WO', window.payloadData.wo);
+            formData.append('Status', status);
+            formData.append('Signature', name);
             formData.append('Timestamp', new Date().toLocaleString());
             
             try {
                 await fetch('https://formspree.io/f/meerlqll', { method: 'POST', body: formData, headers: {'Accept': 'application/json'} });
                 document.getElementById('icMode').style.display = 'none';
                 document.getElementById('successView').classList.remove('hidden');
-            } catch (e) { 
-                alert("Submission failed. Please try again.");
-                btn.disabled = false;
-                btn.innerText = "Submit Authorization";
-            }
+            } catch (e) { alert("Failed"); btn.disabled = false; }
         }
     </script>
 </body>
