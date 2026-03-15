@@ -15,7 +15,6 @@
         #map { height: 300px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; }
         label { color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.65rem; display: block; margin-bottom: 4px; }
         input, textarea, select { border: 1px solid #e2e8f0; border-radius: 8px !important; padding: 10px; font-size: 14px; width: 100%; background: #ffffff; }
-        input:required { border-left: 4px solid #3b82f6; }
         .signature-font { font-family: 'Dancing Script', cursive; font-size: 2.5rem; color: #1e293b; border-bottom: 2px solid #cbd5e1; background: transparent; width: 100%; }
         .status-pill { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
         input[type="radio"]:checked + .status-pill { border-color: currentColor; transform: scale(1.05); ring: 2px; ring-offset: 2px; }
@@ -50,8 +49,13 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start border-t pt-6 mt-6">
                     <div class="space-y-4">
-                        <label class="text-blue-600 font-black">Route Locations (Optimize Enabled)</label>
-                        <textarea id="locations" rows="6" placeholder="Enter Start, then all stops, then End point..." oninput="calculateRoute()"></textarea>
+                        <div class="flex justify-between items-center">
+                            <label class="text-blue-600 font-black">Interchangeable Locations</label>
+                            <label class="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase cursor-pointer">
+                                <input type="checkbox" id="round_trip" onchange="calculateRoute()" class="w-3 h-3"> Round Trip
+                            </label>
+                        </div>
+                        <textarea id="locations" rows="6" placeholder="Paste all addresses here (First address will be the starting point)..." oninput="calculateRoute()"></textarea>
                         
                         <div class="bg-slate-900 rounded-2xl p-6 text-white flex justify-between items-center shadow-xl">
                             <div><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Optimized Miles</p><span id="mileage_display" class="text-3xl font-black text-emerald-400">0.0</span></div>
@@ -60,6 +64,7 @@
                                 <span id="time_display" class="text-3xl font-black text-blue-400">--</span>
                             </div>
                         </div>
+                        <p class="text-[9px] text-slate-400 italic">Note: Google will reorder these addresses for the most efficient path.</p>
                     </div>
                     <div><div id="map"></div></div>
                 </div>
@@ -133,34 +138,32 @@
             directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
         }
 
-        document.getElementById('locations').addEventListener('input', calculateRoute);
-
         function calculateRoute() {
             const lines = document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 5);
             if (lines.length < 2) return;
             
+            const isRoundTrip = document.getElementById('round_trip').checked;
+            const startPoint = lines[0];
+            const endPoint = isRoundTrip ? startPoint : lines[lines.length - 1];
+            const waypoints = isRoundTrip ? lines.slice(1) : lines.slice(1, -1);
+
             directionsService.route({
-                origin: lines[0],
-                destination: lines[lines.length - 1],
-                waypoints: lines.slice(1, -1).map(loc => ({ location: loc, stopover: true })),
-                optimizeWaypoints: true, // THE "PERFECT ROUTE" OPTIMIZER
+                origin: startPoint,
+                destination: endPoint,
+                waypoints: waypoints.map(loc => ({ location: loc, stopover: true })),
+                optimizeWaypoints: true, // Finds the best sequence for waypoints
                 travelMode: google.maps.TravelMode.DRIVING,
                 unitSystem: google.maps.UnitSystem.IMPERIAL,
-                drivingOptions: {
-                    departureTime: new Date(), 
-                    trafficModel: 'best_guess' // BALANCED TRAFFIC MODEL
-                }
+                drivingOptions: { departureTime: new Date(), trafficModel: 'best_guess' }
             }, (result, status) => {
                 if (status === "OK") {
                     directionsRenderer.setDirections(result);
                     let totalMeters = 0;
                     let totalSeconds = 0;
-                    
                     result.routes[0].legs.forEach(leg => { 
                         totalMeters += leg.distance.value; 
                         totalSeconds += (leg.duration_in_traffic ? leg.duration_in_traffic.value : leg.duration.value);
                     });
-
                     document.getElementById('mileage_display').innerText = (totalMeters * 0.000621371).toFixed(1);
                     const hours = Math.floor(totalSeconds / 3600);
                     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -192,17 +195,18 @@
                 mi: document.getElementById('mileage_display').innerText,
                 time: document.getElementById('time_display').innerText,
                 due: document.getElementById('due_date').value,
+                rt: document.getElementById('round_trip').checked,
                 locs: document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 2).join('|')
             };
 
-            if (!d.de || !d.icn || !d.wo || !d.comp || !d.due) return alert("Required fields missing.");
+            if (!d.de || !d.icn || !d.wo || !d.comp || !d.due) return alert("All fields are required.");
             
             const payload = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
             const link = `${window.location.origin}${window.location.pathname}?data=${payload}`;
             
             navigator.clipboard.writeText(link);
             const subject = encodeURIComponent(`Action Required: Optimized Route Authorization [WO #${d.wo}]`);
-            const body = encodeURIComponent(`Hello ${d.icn},\n\nAn optimized Work Order route has been dispatched. Review the efficiency details here:\n\nWO #: ${d.wo}\nTotal Optimized Miles: ${d.mi}\nEst. Drive Time: ${d.time}\nComp: $${d.comp}\n\n${link}`);
+            const body = encodeURIComponent(`Hello ${d.icn},\n\nA professionally optimized route has been prepared for you. \n\n• WO #: ${d.wo}\n• Total Miles: ${d.mi}\n• Est. Drive Time: ${d.time}\n• Compensation: $${d.comp}\n\nReview & Sign Here: ${link}`);
 
             window.location.href = `mailto:${d.ice}?subject=${subject}&body=${body}`;
             alert("Perfect Route Link Copied!");
@@ -221,9 +225,8 @@
                     document.getElementById('summaryZone').innerHTML = `
                         <div class="flex justify-between border-b pb-2"><strong>Contractor:</strong> <span>${d.icn}</span></div>
                         <div class="flex justify-between text-blue-600"><strong>Work Order #:</strong> <span class="font-bold">${d.wo}</span></div>
-                        <div class="flex justify-between"><strong>Optimized Mileage:</strong> <span>${d.mi} Miles</span></div>
-                        <div class="flex justify-between text-slate-500 italic"><strong>Est. Drive Time:</strong> <span>${d.time || 'N/A'}</span></div>
-                        <div class="flex justify-between"><strong>Due Date:</strong> <span>${d.due}</span></div>
+                        <div class="flex justify-between"><strong>Optimized Mileage:</strong> <span>${d.mi} Miles ${d.rt ? '(Round Trip)' : ''}</span></div>
+                        <div class="flex justify-between text-slate-500 italic"><strong>Time (w/ Traffic):</strong> <span>${d.time || 'N/A'}</span></div>
                         <div class="flex justify-between border-t pt-2 mt-2"><strong>Compensation:</strong> <span class="text-emerald-600 font-black">$${d.comp}</span></div>
                     `;
                     window.payloadData = d;
@@ -233,8 +236,10 @@
 
         function viewRoute() {
             const stops = window.payloadData.locs.split('|');
-            const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(stops[0])}&destination=${encodeURIComponent(stops[stops.length-1])}&waypoints=${encodeURIComponent(stops.slice(1,-1).join('|'))}&travelmode=driving`;
-            window.open(url, '_blank');
+            const origin = encodeURIComponent(stops[0]);
+            const dest = window.payloadData.rt ? origin : encodeURIComponent(stops[stops.length-1]);
+            const waypoints = window.payloadData.rt ? encodeURIComponent(stops.slice(1).join('|')) : encodeURIComponent(stops.slice(1,-1).join('|'));
+            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`, '_blank');
         }
 
         function updateSigPreview() { document.getElementById('sig_name_preview').innerText = document.getElementById('typed_sig').value || "the signatory"; }
@@ -244,7 +249,6 @@
             const name = document.getElementById('typed_sig').value;
             const reason = document.getElementById('decline_reason').value;
             const counter = document.getElementById('counter_comp').value;
-            const deadline = document.getElementById('counter_deadline').value;
 
             if (status === 'Accepted' && (!name || !document.getElementById('legal_consent').checked)) return alert("Signature required.");
             if (status === 'Declined' && !reason) return alert("Reason required.");
@@ -252,12 +256,10 @@
             const btn = document.getElementById('submitBtn');
             btn.disabled = true; btn.innerText = "Processing...";
 
-            const ts = new Date().toISOString();
             const txID = `CERT-${window.payloadData.wo}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-
             document.getElementById('auditTrail').classList.remove('hidden');
             document.getElementById('audit_id').innerText = `ID: ${txID}`;
-            document.getElementById('audit_ts').innerText = `TS: ${ts}`;
+            document.getElementById('audit_ts').innerText = `TS: ${new Date().toISOString()}`;
             document.getElementById('audit_ua').innerText = `ENV: ${navigator.userAgent.substring(0, 40)}`;
 
             const formData = new FormData();
@@ -265,18 +267,12 @@
             formData.append('Summary', `Optimized Route ${status} by ${window.payloadData.icn}`);
             formData.append('Work Order', window.payloadData.wo);
             formData.append('Contractor', window.payloadData.icn);
-            formData.append('Original Comp', `$${window.payloadData.comp}`);
-            formData.append('Optimized Mileage', `${window.payloadData.mi} mi`);
-            formData.append('Traffic Est. Time', window.payloadData.time);
+            formData.append('Decision', status);
             
-            if (status === 'Accepted') {
-                formData.append('Decision', 'ACCEPTED');
-                formData.append('Signature', name);
-            } else {
-                formData.append('Decision', 'DECLINED');
+            if (status === 'Accepted') formData.append('Signature', name);
+            else {
                 formData.append('Reason', reason);
                 if (counter) formData.append('Counter Offer', `$${counter}`);
-                if (deadline) formData.append('Offer Deadline', deadline);
             }
             
             formData.append('Audit ID', txID);
