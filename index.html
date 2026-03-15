@@ -24,12 +24,12 @@
 <body class="p-4 md:p-12">
 
     <div id="captureArea" class="max-w-4xl mx-auto form-card bg-white border border-gray-100 text-slate-800">
-        <div class="brand-blue p-8 text-white flex justify-between items-center no-print">
-            <div class="flex items-center gap-4">
+        <div class="brand-blue p-8 text-white flex justify-between items-center no-print text-white">
+            <div class="flex items-center gap-4 text-white">
                 <div class="bg-white/10 p-3 rounded-xl font-extrabold text-2xl border border-white/20 text-center w-14">TB</div>
                 <div>
-                    <h1 class="text-2xl font-bold leading-tight text-white">Work Order Dispatch</h1>
-                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80">Certified Record of Authorization</p>
+                    <h1 class="text-2xl font-bold leading-tight">Work Order Dispatch</h1>
+                    <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest opacity-80 text-white">Certified Record of Authorization</p>
                 </div>
             </div>
         </div>
@@ -47,7 +47,7 @@
                     <div><label>Due Date</label><input type="date" id="due_date"></div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start border-t pt-6 mt-6">
                     <div class="space-y-4">
                         <label class="text-blue-600 font-black">Route Locations</label>
                         <textarea id="locations" rows="6" placeholder="Addresses here..." oninput="calculateRoute()"></textarea>
@@ -61,7 +61,7 @@
                 </div>
 
                 <button type="button" onclick="generateCertifiedLink()" class="w-full brand-blue text-white font-bold py-4 rounded-xl shadow-lg text-xs uppercase tracking-widest hover:opacity-90">
-                    🚀 Dispatch Certified Verification Link
+                    🚀 Generate & Copy Certified Link
                 </button>
             </div>
 
@@ -95,13 +95,19 @@
                         </div>
 
                         <div id="declineFields" class="hidden space-y-4">
-                            <div>
-                                <label class="text-red-600 font-black">Counter Offer Amount ($)</label>
-                                <input type="number" id="counter_comp" placeholder="Optional Sugggested Price">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-red-600 font-black">Counter Amount ($)</label>
+                                    <input type="number" id="counter_comp" placeholder="Price">
+                                </div>
+                                <div>
+                                    <label class="text-red-600 font-black">Offer Valid Until</label>
+                                    <input type="time" id="counter_deadline">
+                                </div>
                             </div>
                             <div>
                                 <label class="text-red-600 font-black">Reason for Denial</label>
-                                <textarea id="decline_reason" rows="4" placeholder="Please specify why you are declining this route..."></textarea>
+                                <textarea id="decline_reason" rows="4" placeholder="Brief explanation..."></textarea>
                             </div>
                         </div>
 
@@ -119,7 +125,7 @@
             <div id="successView" class="hidden text-center py-12 space-y-4">
                 <div class="text-6xl text-slate-800">✅</div>
                 <h2 class="text-2xl font-bold uppercase tracking-tight">Response Recorded</h2>
-                <p id="success_msg" class="text-slate-500">The dispatcher has been notified of your decision.</p>
+                <p id="success_msg" class="text-slate-500">The dispatcher has been notified. A confirmation receipt has been sent.</p>
             </div>
         </form>
     </div>
@@ -150,14 +156,15 @@
         }
 
         function toggleDecision(choice) {
+            const btn = document.getElementById('submitBtn');
             if (choice === 'Accepted') {
                 document.getElementById('acceptFields').classList.remove('hidden');
                 document.getElementById('declineFields').classList.add('hidden');
-                document.getElementById('submitBtn').classList.replace('bg-red-600', 'bg-blue-600');
+                btn.className = "w-full bg-blue-600 text-white font-bold py-5 rounded-xl shadow-lg text-xs uppercase tracking-widest transition-colors";
             } else {
                 document.getElementById('acceptFields').classList.add('hidden');
                 document.getElementById('declineFields').classList.remove('hidden');
-                document.getElementById('submitBtn').classList.replace('bg-blue-600', 'bg-red-600');
+                btn.className = "w-full bg-red-600 text-white font-bold py-5 rounded-xl shadow-lg text-xs uppercase tracking-widest transition-colors";
             }
         }
 
@@ -192,8 +199,8 @@
                     document.getElementById('summaryZone').innerHTML = `
                         <div class="flex justify-between"><strong>Contractor:</strong> <span>${d.icn}</span></div>
                         <div class="flex justify-between text-blue-600"><strong>Work Order #:</strong> <span class="font-bold">${d.wo}</span></div>
-                        <div class="flex justify-between"><strong>Mileage:</strong> <span>${d.mi} Miles</span></div>
-                        <div class="flex justify-between border-t pt-2 mt-2"><strong>Compensation:</strong> <span class="text-emerald-600 font-black">$${d.comp}</span></div>
+                        <div class="flex justify-between border-b pb-2 mb-2"><strong>Mileage:</strong> <span>${d.mi} Miles</span></div>
+                        <div class="flex justify-between"><strong>Current Comp:</strong> <span class="text-emerald-600 font-black">$${d.comp}</span></div>
                     `;
                     window.payloadData = d;
                 } catch(e) { console.error("Data decode error"); }
@@ -213,9 +220,10 @@
             const name = document.getElementById('typed_sig').value;
             const reason = document.getElementById('decline_reason').value;
             const counter = document.getElementById('counter_comp').value;
+            const deadline = document.getElementById('counter_deadline').value;
 
-            if (status === 'Accepted' && (!name || !document.getElementById('legal_consent').checked)) return alert("Review and signature required to accept.");
-            if (status === 'Declined' && !reason) return alert("Please provide a reason for declining.");
+            if (status === 'Accepted' && (!name || !document.getElementById('legal_consent').checked)) return alert("Signature required to accept.");
+            if (status === 'Declined' && !reason) return alert("Please provide a reason.");
 
             const btn = document.getElementById('submitBtn');
             btn.disabled = true; btn.innerText = "Processing...";
@@ -230,29 +238,32 @@
 
             const formData = new FormData();
             formData.append('_subject', `WO ${window.payloadData.wo} ${status.toUpperCase()}`);
-            formData.append('Decision Status', status);
+            formData.append('Summary', `Route ${status} by ${window.payloadData.icn}`);
             formData.append('Work Order', window.payloadData.wo);
             formData.append('Contractor', window.payloadData.icn);
+            formData.append('Original Comp', `$${window.payloadData.comp}`);
             
             if (status === 'Accepted') {
-                formData.append('Signatory', name);
-                formData.append('Compensation', window.payloadData.comp);
+                formData.append('Decision', 'ACCEPTED');
+                formData.append('Signature', name);
             } else {
-                formData.append('Reason for Denial', reason);
-                if (counter) formData.append('Counter Offer ($)', counter);
+                formData.append('Decision', 'DECLINED');
+                formData.append('Reason', reason);
+                if (counter) formData.append('Counter Offer', `$${counter}`);
+                if (deadline) formData.append('Offer Deadline', deadline);
             }
             
-            formData.append('Verification ID', txID);
-            formData.append('_replyto', window.payloadData.de);
+            formData.append('Audit ID', txID);
+            formData.append('_replyto', window.payloadData.ice); // Sends confirmation to IC
+            formData.append('Dispatcher CC', window.payloadData.de); // Helper for your Formspree
 
             try {
                 await fetch('https://formspree.io/f/meerlqll', { method: 'POST', body: formData, headers: {'Accept': 'application/json'} });
                 if (status === 'Accepted') {
-                    await html2pdf().set({ margin: 0.5, filename: `WO_CERT_${window.woNum}.pdf`, jsPDF: { format: 'letter' } }).from(document.getElementById('captureArea')).save();
+                    await html2pdf().set({ margin: 0.5, filename: `WO_CERT_${window.payloadData.wo}.pdf`, jsPDF: { format: 'letter' } }).from(document.getElementById('captureArea')).save();
                 }
                 document.getElementById('icMode').style.display = 'none';
                 document.getElementById('successView').classList.remove('hidden');
-                if (status === 'Declined') document.getElementById('success_msg').innerText = "Dispatcher notified of your denial and counter-offer.";
             } catch (e) { btn.disabled = false; alert("Submission failed."); }
         }
     </script>
