@@ -30,8 +30,8 @@
                     <div class="bg-slate-900 text-white font-black text-3xl px-4 py-2 rounded">TBM</div>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-extrabold tracking-tight">Terraboost Media</h1>
-                    <p class="text-blue-400 text-xs uppercase font-black tracking-[0.2em] opacity-90">Logistics & Route Authorization Portal</p>
+                    <h1 class="text-3xl font-extrabold tracking-tight text-white">Terraboost Media</h1>
+                    <p class="text-blue-400 text-xs uppercase font-black tracking-[0.2em] opacity-90 text-white">Logistics & Route Authorization Portal</p>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                         
                         <div class="bg-slate-900 rounded-3xl p-8 text-white flex justify-between items-center shadow-2xl">
                             <div><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Mileage</p><span id="mileage_display" class="text-4xl font-black text-emerald-400">0.0</span></div>
-                            <div class="text-right"><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest">Time</p><span id="time_display" class="text-4xl font-black text-blue-400">--</span></div>
+                            <div class="text-right"><p class="text-slate-400 text-[10px] uppercase font-black tracking-widest text-white">Time</p><span id="time_display" class="text-4xl font-black text-blue-400">--</span></div>
                         </div>
                     </div>
                     <div><div id="map"></div></div>
@@ -262,23 +262,49 @@
         async function submitAuthorization() {
             const status = document.querySelector('input[name="status"]:checked').value;
             const name = document.getElementById('typed_sig').value;
+            const declineReason = document.getElementById('decline_reason').value;
+            const counterOffer = document.getElementById('counter_comp').value;
+
             if (status === 'Accepted' && (!name || !document.getElementById('legal_consent').checked)) return alert("Full signature required.");
+            if (status === 'Declined' && !declineReason) return alert("Please provide a reason for declining.");
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true; btn.innerText = "Submitting...";
 
             const txID = `TBM-${window.payloadData.wo}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
             const formData = new FormData();
-            formData.append('_subject', `WO ${window.payloadData.wo} ${status.toUpperCase()} | Terraboost Media`);
-            formData.append('Status', status);
-            formData.append('Contractor', window.payloadData.icn);
-            formData.append('WO', window.payloadData.wo);
-            formData.append('Signature', name);
-            formData.append('ID', txID);
+            
+            // EMAIL DATA PAYLOAD (ALL DETAILS INCLUDED)
+            formData.append('_subject', `RESPONSE: WO ${window.payloadData.wo} ${status.toUpperCase()} | Terraboost Media`);
+            formData.append('Contractor Name', window.payloadData.icn);
+            formData.append('Work Order #', window.payloadData.wo);
+            formData.append('Final Decision', status);
+            formData.append('Optimized Mileage', window.payloadData.mi + " Miles");
+            formData.append('Estimated Drive Time', window.payloadData.time);
+            formData.append('Compensation Amount', "$" + window.payloadData.comp);
+            formData.append('Due Date', window.payloadData.due);
+            
+            if (status === 'Accepted') {
+                formData.append('Electronic Signature', name);
+                formData.append('Legal Consent', 'Agreed');
+            } else {
+                formData.append('Reason for Rejection', declineReason);
+                formData.append('Counter Offer Requested', counterOffer ? "$" + counterOffer : "N/A");
+            }
+
+            formData.append('Verification ID', txID);
+            formData.append('Submission Timestamp', new Date().toLocaleString());
             
             try {
                 await fetch('https://formspree.io/f/meerlqll', { method: 'POST', body: formData, headers: {'Accept': 'application/json'} });
                 if (status === 'Accepted') await html2pdf().set({ margin: 0.5, filename: `TBM_CERT_${window.payloadData.wo}.pdf` }).from(document.getElementById('captureArea')).save();
                 document.getElementById('icMode').style.display = 'none';
                 document.getElementById('successView').classList.remove('hidden');
-            } catch (e) { alert("Error"); }
+            } catch (e) { 
+                alert("Submission failed. Please try again.");
+                btn.disabled = false;
+                btn.innerText = "Submit Authorization";
+            }
         }
     </script>
 </body>
