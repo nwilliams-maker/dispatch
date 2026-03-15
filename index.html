@@ -15,6 +15,7 @@
         #map { height: 300px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; }
         label { color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.65rem; display: block; margin-bottom: 4px; }
         input, textarea, select { border: 1px solid #e2e8f0; border-radius: 8px !important; padding: 10px; font-size: 14px; width: 100%; background: #ffffff; }
+        input:required { border-left: 4px solid #3b82f6; }
         .signature-font { font-family: 'Dancing Script', cursive; font-size: 2.5rem; color: #1e293b; border-bottom: 2px solid #cbd5e1; background: transparent; width: 100%; }
         .status-pill { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
         input[type="radio"]:checked + .status-pill { border-color: currentColor; transform: scale(1.05); ring: 2px; ring-offset: 2px; }
@@ -39,12 +40,12 @@
             <div id="setupFields" class="space-y-6">
                 <h3 class="text-xs font-black text-blue-600 uppercase tracking-widest border-b border-blue-100 pb-3">1. Dispatch Configuration</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div><label>Dispatcher Email</label><input type="email" id="d_email" placeholder="logistics@terraboost.com"></div>
-                    <div><label>Contractor Name (IC)</label><input type="text" id="ic_name_setup" placeholder="Full Name"></div>
-                    <div><label>Contractor Email</label><input type="email" id="ic_email_setup" placeholder="worker@email.com"></div>
-                    <div><label>Work Order #</label><input type="text" id="task_num" placeholder="WO-0000"></div>
-                    <div><label>Compensation ($)</label><input type="number" id="comp" placeholder="0.00"></div>
-                    <div><label>Due Date</label><input type="date" id="due_date"></div>
+                    <div><label>Dispatcher Email</label><input type="email" id="d_email" placeholder="logistics@terraboost.com" required></div>
+                    <div><label>Contractor Name (IC)</label><input type="text" id="ic_name_setup" placeholder="Full Name" required></div>
+                    <div><label>Contractor Email</label><input type="email" id="ic_email_setup" placeholder="worker@email.com" required></div>
+                    <div><label>Work Order #</label><input type="text" id="task_num" placeholder="WO-0000" required></div>
+                    <div><label>Compensation ($)</label><input type="number" id="comp" placeholder="0.00" required></div>
+                    <div><label>Due Date (Mandatory)</label><input type="date" id="due_date" required></div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start border-t pt-6 mt-6">
@@ -60,7 +61,7 @@
                     <div><div id="map"></div></div>
                 </div>
 
-                <button type="button" onclick="generateCertifiedLink()" class="w-full brand-blue text-white font-bold py-4 rounded-xl shadow-lg text-xs uppercase tracking-widest hover:opacity-90">
+                <button type="button" onclick="generateCertifiedLink()" class="w-full brand-blue text-white font-bold py-4 rounded-xl shadow-lg text-xs uppercase tracking-widest hover:opacity-90 transition-all">
                     🚀 Generate & Copy Certified Link
                 </button>
             </div>
@@ -85,7 +86,7 @@
                             View Optimized Route
                         </button>
 
-                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-3 text-sm text-slate-700"></div>
+                        <div id="summaryZone" class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-3 text-sm text-slate-700 font-medium"></div>
                     </div>
 
                     <div class="space-y-6">
@@ -96,19 +97,10 @@
 
                         <div id="declineFields" class="hidden space-y-4">
                             <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-red-600 font-black">Counter Amount ($)</label>
-                                    <input type="number" id="counter_comp" placeholder="Price">
-                                </div>
-                                <div>
-                                    <label class="text-red-600 font-black">Offer Valid Until</label>
-                                    <input type="time" id="counter_deadline">
-                                </div>
+                                <div><label class="text-red-600 font-black">Counter Amount ($)</label><input type="number" id="counter_comp" placeholder="Price"></div>
+                                <div><label class="text-red-600 font-black">Offer Valid Until</label><input type="time" id="counter_deadline"></div>
                             </div>
-                            <div>
-                                <label class="text-red-600 font-black">Reason for Denial</label>
-                                <textarea id="decline_reason" rows="4" placeholder="Brief explanation..."></textarea>
-                            </div>
+                            <div><label class="text-red-600 font-black">Reason for Denial</label><textarea id="decline_reason" rows="4" placeholder="Brief explanation..."></textarea></div>
                         </div>
 
                         <div class="text-right border-t pt-4"><label>Action Date</label><span id="dateDisplay" class="font-bold text-slate-800 text-sm"></span></div>
@@ -176,13 +168,36 @@
                 wo: document.getElementById('task_num').value,
                 comp: document.getElementById('comp').value,
                 mi: document.getElementById('mileage_display').innerText,
+                due: document.getElementById('due_date').value,
                 locs: document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 2).join('|')
             };
-            if (!d.de || !d.icn || !d.wo) return alert("Required fields missing.");
+
+            // STRICT VALIDATION
+            if (!d.de || !d.icn || !d.ice || !d.wo || !d.comp || !d.due || d.locs.split('|').length < 2) {
+                return alert("ERROR: All configuration fields, including the Due Date and Route Locations, must be completed.");
+            }
+            
             const payload = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
             const link = `${window.location.origin}${window.location.pathname}?data=${payload}`;
+            
             navigator.clipboard.writeText(link);
-            window.location.href = `mailto:${d.ice}?subject=Action Required: WO#${d.wo}&body=Review and respond to your route here: ${link}`;
+
+            const subject = encodeURIComponent(`Action Required: Route Authorization [WO #${d.wo}]`);
+            const body = encodeURIComponent(
+                `Hello ${d.icn},\n\n` +
+                `A new Work Order has been dispatched to you. Please review the route details and authorize the assignment using our secure verification portal.\n\n` +
+                `WORK ORDER SUMMARY:\n` +
+                `• Work Order #: ${d.wo}\n` +
+                `• Route Mileage: ${d.mi} Miles\n` +
+                `• Compensation: $${d.comp}\n` +
+                `• Due Date: ${d.due}\n\n` +
+                `Please click the link below to view the optimized route and provide your digital signature:\n` +
+                `${link}\n\n` +
+                `Regards,\n\n` +
+                `Logistics Dispatch`
+            );
+
+            window.location.href = `mailto:${d.ice}?subject=${subject}&body=${body}`;
             alert("Certified Link Copied!");
         }
 
@@ -197,10 +212,11 @@
                     document.getElementById('icMode').classList.remove('hidden');
                     document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString();
                     document.getElementById('summaryZone').innerHTML = `
-                        <div class="flex justify-between"><strong>Contractor:</strong> <span>${d.icn}</span></div>
+                        <div class="flex justify-between border-b pb-2"><strong>Contractor:</strong> <span>${d.icn}</span></div>
                         <div class="flex justify-between text-blue-600"><strong>Work Order #:</strong> <span class="font-bold">${d.wo}</span></div>
-                        <div class="flex justify-between border-b pb-2 mb-2"><strong>Mileage:</strong> <span>${d.mi} Miles</span></div>
-                        <div class="flex justify-between"><strong>Current Comp:</strong> <span class="text-emerald-600 font-black">$${d.comp}</span></div>
+                        <div class="flex justify-between"><strong>Mileage:</strong> <span>${d.mi} Miles</span></div>
+                        <div class="flex justify-between"><strong>Due Date:</strong> <span class="text-slate-900">${d.due}</span></div>
+                        <div class="flex justify-between border-t pt-2 mt-2"><strong>Compensation:</strong> <span class="text-emerald-600 font-black">$${d.comp}</span></div>
                     `;
                     window.payloadData = d;
                 } catch(e) { console.error("Data decode error"); }
@@ -242,6 +258,7 @@
             formData.append('Work Order', window.payloadData.wo);
             formData.append('Contractor', window.payloadData.icn);
             formData.append('Original Comp', `$${window.payloadData.comp}`);
+            formData.append('Original Due Date', window.payloadData.due);
             
             if (status === 'Accepted') {
                 formData.append('Decision', 'ACCEPTED');
@@ -254,8 +271,7 @@
             }
             
             formData.append('Audit ID', txID);
-            formData.append('_replyto', window.payloadData.ice); // Sends confirmation to IC
-            formData.append('Dispatcher CC', window.payloadData.de); // Helper for your Formspree
+            formData.append('_replyto', window.payloadData.ice);
 
             try {
                 await fetch('https://formspree.io/f/meerlqll', { method: 'POST', body: formData, headers: {'Accept': 'application/json'} });
