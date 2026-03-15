@@ -41,7 +41,7 @@
         <form id="dispatchForm" class="p-8 md:p-12 space-y-10">
             <div id="setupFields" class="space-y-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div><label>Dispatcher Email</label><input type="email" id="d_email" value="installteam@terraboost.biz"></div>
+                    <div><label>Dispatcher Email</label><input type="email" id="d_email" placeholder="installteam@terraboost.biz"></div>
                     <div><label>Contractor Email</label><input type="email" id="ic_email_setup" placeholder="Enter email..." onblur="lookupContractor(this.value)"></div>
                     <div><label>Contractor Name</label><input type="text" id="ic_name_setup" placeholder="Auto-filled"></div>
                     <div><label>Work Order #</label><input type="text" id="task_num" placeholder="TBM-XXXXX"></div>
@@ -50,7 +50,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="md:col-span-2">
                         <label>Contractor Start/End Address</label>
-                        <input type="text" id="ic_address" placeholder="Auto-fills from DB" readonly class="bg-slate-50 outline-none">
+                        <input type="text" id="ic_address" placeholder="Auto-fills from DB or type manually" onchange="autoInjectContractorAddress(this.value)">
                     </div>
                     <div><label>Compensation ($)</label><input type="number" id="comp" placeholder="0.00"></div>
                 </div>
@@ -107,6 +107,7 @@
 
     <script>
         let map, directionsService, directionsRenderer, inputTimer;
+        // WebApp URL for lookup
         const webAppUrl = "https://script.google.com/macros/s/AKfycby0ksbaRk8DV2nNkMs6pTI_4NGsR7GQjBxzD7l_m6pF5rvK6FVVd5HKnvNxcSBCHVFJ/exec"; 
 
         function initMap() {
@@ -116,7 +117,6 @@
             directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
         }
 
-        // FETCH FROM GOOGLE SHEET API
         async function lookupContractor(email) {
             if (!email || !webAppUrl.includes("https")) return;
             try {
@@ -131,10 +131,13 @@
         }
 
         function autoInjectContractorAddress(addr) {
+            if (!addr || addr.trim().length < 5) return;
             const locField = document.getElementById('locations');
             let current = locField.value.split('\n').filter(l => l.trim().length > 5);
+            // Remove previous instances of the home address to prevent duplicates
             current = current.filter(l => l.toLowerCase().trim() !== addr.toLowerCase().trim());
-            locField.value = [addr, ...current, addr].join('\n');
+            // Wrap the route with the home address at start and end
+            locField.value = [addr.trim(), ...current, addr.trim()].join('\n');
             calculateLargeRoute();
         }
 
@@ -199,49 +202,39 @@
         }
 
         function generateCertifiedLink() {
-    const d = {
-        icn: document.getElementById('ic_name_setup').value,
-        ice: document.getElementById('ic_email_setup').value,
-        wo: document.getElementById('task_num').value,
-        comp: document.getElementById('comp').value,
-        mi: document.getElementById('mileage_display').innerText,
-        time: document.getElementById('time_display').innerText,
-        locs: document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 2).join('|')
-    };
+            const d = {
+                icn: document.getElementById('ic_name_setup').value,
+                ice: document.getElementById('ic_email_setup').value,
+                wo: document.getElementById('task_num').value,
+                comp: document.getElementById('comp').value,
+                mi: document.getElementById('mileage_display').innerText,
+                time: document.getElementById('time_display').innerText,
+                locs: document.getElementById('locations').value.split('\n').filter(l => l.trim().length > 2).join('|')
+            };
 
-    // Validation
-    if (!d.ice || !d.icn || d.mi === "0.0") {
-        return alert("Missing Data: Please ensure Email, Name, and Locations are filled and calculated.");
-    }
+            if (!d.ice || !d.icn || d.mi === "0.0") {
+                return alert("Missing Data: Please ensure Email, Name, and Locations are filled and calculated.");
+            }
 
-    // 1. Generate the payload and link
-    const payload = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
-    const link = `${window.location.origin}${window.location.pathname}?data=${payload}`;
+            const payload = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
+            const link = `${window.location.origin}${window.location.pathname}?data=${payload}`;
 
-    // 2. Copy to clipboard immediately as a backup
-    navigator.clipboard.writeText(link).then(() => {
-        console.log("Link copied to clipboard successfully.");
-    });
+            navigator.clipboard.writeText(link);
 
-    // 3. Prepare Email
-    const subject = encodeURIComponent(`Action Required: Terraboost Route Request | WO #${d.wo}`);
-    const body = encodeURIComponent(
-        `Dear ${d.icn},\n\n` +
-        `An optimized route for WO #${d.wo} is ready for your review.\n\n` +
-        `Please click the link below to authorize the route and compensation.\n\n` +
-        `REVIEW LINK:\n${link}\n\n` +
-        `Regards,\nTerraboost Media Dispatch`
-    );
+            const subject = encodeURIComponent(`Action Required: Terraboost Route Request | WO #${d.wo}`);
+            const body = encodeURIComponent(
+                `Dear ${d.icn},\n\n` +
+                `An optimized route for WO #${d.wo} is ready for your review.\n\n` +
+                `Please click the link below to authorize the route and compensation.\n\n` +
+                `REVIEW LINK:\n${link}\n\n` +
+                `Regards,\nTerraboost Media Dispatch`
+            );
 
-    // 4. Trigger the Mail Window
-    const mailtoLink = `mailto:${d.ice}?subject=${subject}&body=${body}`;
-    
-    // Attempt to open the mail client
-    window.location.href = mailtoLink;
+            const mailtoLink = `mailto:${d.ice}?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink;
 
-    // 5. Visual confirmation
-    alert("Dispatcher Link Copied to Clipboard!\n\nEmail client should open automatically. If not, paste the link into a manual email to: " + d.ice);
-}
+            alert("Dispatcher Link Copied to Clipboard!\n\nEmail client should open automatically.");
+        }
 
         function clearRoute() {
             document.getElementById('locations').value = "";
