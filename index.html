@@ -272,9 +272,12 @@
         let currentGlobalRate = 30; 
         let allContractors = [];
         
-        // UPDATE TO YOUR LATEST DEPLOYED URL
         const webAppUrl = "https://script.google.com/macros/s/AKfycbwxVaO2L0hhtGCejNxSUEon9dFgeU8upvQo4h-sqiPHjwzpHSNjL9KiSWOrcU6vQHOmUw/exec"; 
         const formspreeUrl = "https://formspree.io/f/meerlqll"; 
+
+        // THIS IS THE MAIN EMAIL ON YOUR FORMSPREE ACCOUNT.
+        // It prevents the duplicate CC crashing error.
+        const PRIMARY_FORMSPREE_EMAIL = "nwilliams@terraboost.biz";
 
         const podData = {
             "AK": "Orange", "ALASKA": "Orange", "AZ": "Orange", "ARIZONA": "Orange", "CA": "Orange", "CALIFORNIA": "Orange", 
@@ -480,27 +483,30 @@
             document.getElementById('due_date').value = today.toISOString().split('T')[0];
         }
 
-        async function lookupContractor(email) {
-            if (!email || !webAppUrl.includes("https")) return;
-            try {
-                const response = await fetch(`${webAppUrl}?email=${encodeURIComponent(email)}`);
-                const data = await response.json();
-                if (data && !data.error) {
-                    document.getElementById('ic_name_setup').value = data.name;
-                    document.getElementById('ic_address').value = data.address;
-                    if (data.rate) currentGlobalRate = data.rate;
-                    
-                    window.currentContractorPhone = data.phone || ""; 
+        function lookupContractor(email) {
+            if (!email) return;
+            const c = allContractors.find(ic => ic.email.toLowerCase() === email.toLowerCase());
+            
+            if (c) {
+                document.getElementById('ic_name_setup').value = c.name || "";
+                document.getElementById('ic_address').value = c.address || "";
+                
+                if (c.rate) currentGlobalRate = c.rate;
+                window.currentContractorPhone = c.phone || ""; 
 
-                    clearError(document.getElementById('ic_email_setup'));
-                    clearError(document.getElementById('ic_name_setup'));
-                    clearError(document.getElementById('ic_address'));
+                clearError(document.getElementById('ic_email_setup'));
+                clearError(document.getElementById('ic_name_setup'));
+                clearError(document.getElementById('ic_address'));
 
-                    calculateLargeRoute();
-                    document.getElementById('saveBtn').disabled = true;
-                    document.getElementById('saveBtn').classList.add('opacity-30', 'grayscale');
-                }
-            } catch (e) { console.error("Lookup failed", e); }
+                calculateLargeRoute();
+                document.getElementById('saveBtn').disabled = true;
+                document.getElementById('saveBtn').classList.add('opacity-30', 'grayscale');
+            } else {
+                document.getElementById('ic_name_setup').value = "";
+                document.getElementById('ic_address').value = "";
+                window.currentContractorPhone = "";
+                handleManualEdit();
+            }
         }
 
         async function saveToDatabase() {
@@ -1141,9 +1147,14 @@
                 "IC Notes": notes || "None",
                 "Signature": sig || "N/A",
                 "TASK LOCATION LIST": "\n" + locationList,
-                "_subject": `${decision}: WO #${window.payloadData.wo} (${window.payloadData.icn})`,
-                "_cc": window.payloadData.dispatcherEmail
+                "_subject": `${decision}: WO #${window.payloadData.wo} (${window.payloadData.icn})`
             };
+
+            // PREVENT DUPLICATE CC ERROR: Only add CC if it doesn't match the primary Formspree inbox
+            const dispatcherEmail = window.payloadData.dispatcherEmail;
+            if (dispatcherEmail && dispatcherEmail.toLowerCase() !== PRIMARY_FORMSPREE_EMAIL.toLowerCase()) {
+                formData["_cc"] = dispatcherEmail;
+            }
 
             try {
                 const response = await fetch(formspreeUrl, {
