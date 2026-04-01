@@ -896,7 +896,6 @@
                 return; 
             }
 
-            // GHOST ROUTE FIX: Strictly ensure we captured actual Onfleet Task IDs before allowing generation
             let selectedIds = [];
             locationLines.forEach(line => {
                 const addrOnly = line.replace(/\s[\(\[].*$/, "").trim();
@@ -978,7 +977,7 @@
             }
         }
 
-       window.onload = () => {
+        window.onload = () => {
             const p = new URLSearchParams(window.location.search);
             const routeId = p.get('route'); 
             
@@ -1110,88 +1109,6 @@
                     }).catch(e => console.log("Silent error loading contractor DB", e));
             }
         };
-            
-            const p = new URLSearchParams(window.location.search);
-            const routeId = p.get('route'); 
-            
-            if (routeId) {
-                document.getElementById('setupFields').remove();
-                document.getElementById('icMode').classList.remove('hidden');
-                
-                document.getElementById('summaryZone').innerHTML = `<div class="text-center py-10"><div class="spinner mx-auto mb-4 border-blue-500"></div><p class="text-slate-500 font-bold animate-pulse">Loading Route Data...</p></div>`;
-                
-                fetch(`${webAppUrl}?action=getRoute&routeId=${routeId}`)
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.error) {
-                            document.getElementById('summaryZone').innerHTML = `<div class="text-center py-10 text-red-500 font-bold">⚠️ ${result.error}</div>`;
-                            return;
-                        }
-                        
-                        const d = result.payload;
-                        window.payloadData = d;
-                        
-                        let displayDate = d.due ? `${d.due.split('-')[1]}/${d.due.split('-')[2]}/${d.due.split('-')[0]}` : 'N/A';
-                        
-                        let kioskAlert = '';
-                        if (d.kCnt && d.kCnt > 0) {
-                            kioskAlert = `
-                                <div class="border-2 border-emerald-400 bg-emerald-50 rounded-2xl p-4 mb-6 shadow-sm">
-                                    <div class="flex items-start gap-3">
-                                        <div class="bg-emerald-100 p-2 rounded-full text-emerald-600 mt-1">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        </div>
-                                        <div>
-                                            <h4 class="text-emerald-800 font-black text-[11px] uppercase tracking-widest">Heavy Lifting Required</h4>
-                                            <p class="text-emerald-600 text-xs font-medium mt-0.5">This route contains <strong>${d.kCnt} Kiosk Install(s)</strong>. Please be aware that kiosks weigh approximately 50 lbs each.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-
-                        let digitalSummaryLine = '';
-                        if (d.dCnt && d.dCnt > 0) {
-                            digitalSummaryLine = `<div class="flex justify-between text-purple-600 font-bold pb-3 mb-3 border-b border-slate-100"><span>Digital Services:</span> <span>${d.dCnt}</span></div>`;
-                        }
-                        
-                        let notesAlert = '';
-                        if (d.notes && d.notes.trim() !== '') {
-                            notesAlert = `
-                                <div class="border-2 border-blue-400 bg-blue-50 rounded-2xl p-4 mb-6 shadow-sm">
-                                    <div class="flex items-start gap-3">
-                                        <div class="bg-blue-100 p-2 rounded-full text-blue-600 mt-1">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        </div>
-                                        <div>
-                                            <h4 class="text-blue-800 font-black text-[11px] uppercase tracking-widest">Special Instructions</h4>
-                                            <p class="text-blue-700 text-xs font-medium mt-0.5">${d.notes}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                        
-                        document.getElementById('summaryZone').innerHTML = `
-                            ${notesAlert}
-                            ${kioskAlert}
-                            <div class="flex justify-between border-b border-slate-100 pb-3 mb-3 font-bold uppercase text-[10px] tracking-widest text-slate-400"><span>Route Summary</span></div>
-                            <div class="flex justify-between border-b border-slate-100 pb-3 mb-3"><span>Contractor:</span> <span class="font-bold text-slate-900">${d.icn}</span></div>
-                            <div class="flex justify-between text-blue-600 font-bold pb-3 mb-3 border-b border-slate-100"><span>Work Order #:</span> <span>${d.wo}</span></div>
-                            <div class="flex justify-between pb-3 mb-3 border-b border-slate-100"><span>Due Date:</span> <span class="font-bold text-slate-900">${displayDate}</span></div>
-                            <div class="flex justify-between pb-3 mb-3 border-b border-slate-100"><span>Unique Locations:</span> <span class="font-bold text-slate-900">${d.lCnt}</span></div>
-                            <div class="flex justify-between pb-3 mb-3 border-b border-slate-100"><span>Total Tasks:</span> <span class="font-bold text-slate-900">${d.tCnt}</span></div>
-                            <div class="flex justify-between text-emerald-600 font-bold pb-3 mb-3 border-b border-slate-100"><span>Kiosk Installs:</span> <span>${d.kCnt}</span></div>
-                            ${digitalSummaryLine}
-                            <div class="flex justify-between pb-3 mb-3"><span>Mileage:</span> <span class="font-medium">${d.mi} Miles</span></div>
-                            <div class="flex justify-between border-t border-slate-200 pt-4 mt-2 font-black text-2xl text-emerald-600"><span>Total Comp:</span> <span>$${d.comp}</span></div>
-                        `;
-                    })
-                    .catch(e => {
-                        document.getElementById('summaryZone').innerHTML = `<div class="text-center py-10 text-red-500 font-bold">⚠️ Error connecting to database. Please refresh.</div>`;
-                    });
-            }
-        };
 
         function buildMapsUrl(limit) {
             if (!window.payloadData || !window.payloadData.locs) return null;
@@ -1304,7 +1221,6 @@
             }
 
             try {
-                // Step 1: Send to Formspree
                 const response = await fetch(formspreeUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -1313,7 +1229,6 @@
                 
                 if (response.ok) {
                     
-                    // PREMATURE CLOSE FIX: Wait for assignment to finish BEFORE showing the green checkmark
                     if (decision === 'Accepted') {
                         if (!window.payloadData.phone) {
                             alert("⚠️ Route accepted, but the contractor is missing a phone number. Tasks were NOT auto-assigned in Onfleet.");
@@ -1338,7 +1253,6 @@
                         }
                     }
 
-                    // Step 3: NOW the assignment is perfectly complete, show the success screen!
                     document.getElementById('icMode').classList.add('hidden');
                     document.getElementById('successView').classList.remove('hidden');
 
