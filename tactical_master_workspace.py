@@ -50,15 +50,31 @@ headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()
 
 st.set_page_config(page_title="Terraboost Tactical Workspace", layout="wide")
 
-# --- UI STYLING (FIXED FOR HIGH CONTRAST & UI PRESERVATION) ---
+# --- UI STYLING (FIXED FOR EMAIL PROMPT CONTRAST) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
     
     .stApp {{ background-color: #f4f5f7 !important; color: #000000 !important; font-family: 'Roboto', sans-serif !important; }}
 
-    /* Fix Faint Labels above Input Boxes */
+    /* Fix Faint Labels above Input Boxes and Selectboxes */
     div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 700 !important; font-size: 14px !important; opacity: 1 !important; }}
+
+    /* 🎯 TARGETED FIX: Email Payload Prompt Box and Text */
+    div[data-testid="stTextArea"] label p {{
+        color: #000000 !important;
+        font-weight: 800 !important;
+        font-size: 15px !important;
+        opacity: 1 !important;
+    }}
+    div[data-testid="stTextArea"] textarea {{
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+        border: 1px solid #999999 !important;
+        font-weight: 600 !important;
+        font-family: 'Roboto', sans-serif !important;
+        opacity: 1 !important;
+    }}
 
     /* Fix Faint Metric Values and Labels (Overview Cards) */
     [data-testid="stMetricValue"] {{ color: #000000 !important; font-weight: 800 !important; }}
@@ -82,7 +98,7 @@ st.markdown(f"""
     /* Button and Input Contrast */
     .stButton>button {{ background-color: {TB_PURPLE} !important; color: #FFFFFF !important; font-weight: 700 !important; border-radius: 6px !important; width: 100%; }}
     .stButton>button:hover {{ background-color: {TB_GREEN} !important; }}
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTextArea textarea {{ color: #000000 !important; border: 1px solid #999999 !important; font-weight: 500 !important; }}
+    .stTextInput input, .stNumberInput input, .stDateInput input {{ color: #000000 !important; border: 1px solid #999999 !important; font-weight: 500 !important; }}
     
     #status {{ display: none !important; }}
     [data-testid="stStatusWidget"] {{ display: none !important; }}
