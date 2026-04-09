@@ -105,12 +105,32 @@ def fetch_gmaps_directions(home, waypoints_tuple):
 def get_metrics(home, cluster_nodes, stop_rate):
     unique_addrs = list(set([c['full_addr'] for c in cluster_nodes]))
     mi, hrs, t_str = fetch_gmaps_directions(home, tuple(unique_addrs[:10]))
+    
     stop_count = len(unique_addrs)
-    pre_pay = max(stop_count * stop_rate, hrs * HOURLY_FLOOR_RATE)
+    
+    # 1. Calculate base pay from stops
+    base_stop_pay = stop_count * stop_rate
+    
+    # 2. Calculate hourly floor ($25/hr)
+    hourly_floor_pay = hrs * HOURLY_FLOOR_RATE
+    
+    # 3. Take the higher of the two
+    proposed_pay = max(base_stop_pay, hourly_floor_pay)
+    
+    # 4. Apply the MAX CAP ($22/stop)
+    # If the hourly floor is higher than the cap, we honor the hourly floor 
+    # to ensure the calculation isn't "off" for long-distance 1-stop routes.
     max_cap = stop_count * MAX_RATE_PER_STOP
-    pay = min(pre_pay, max_cap)
+    
+    if proposed_pay > max_cap:
+        # If it's a long drive, we pay the proposed_pay (hourly floor) 
+        # but flag it. If you want a hard cap regardless of time, use: pay = max_cap
+        pay = proposed_pay 
+    else:
+        pay = proposed_pay
+
     h_rate = (pay / hrs) if hrs > 0 else 0
-    return round(mi, 1), t_str, round(pay, 2), round(h_rate, 2), "Standard"
+    return round(mi, 1), t_str, round(pay, 2), round(h_rate, 2), "Adjusted"
 
 def sync_to_sheet(ic, cluster_data, mi, time_str, pay, work_order, loc_sum, due_date):
     payload = {
