@@ -18,9 +18,7 @@ IC_SHEET_URL = "https://docs.google.com/spreadsheets/d/1y6wX0x93iDc3gdK_nZKLD-2Q
 
 MAX_DEADHEAD_MILES = 60
 HOURLY_FLOOR_RATE = 25.00
-# DUAL BARRIERS
-HOURLY_REVIEW_LIMIT = 35.00 
-STOP_REVIEW_LIMIT = 25.00
+REVIEW_PER_STOP_LIMIT = 23.00 # NEW STRICT LIMIT
 
 TB_PURPLE = "#633094"
 TB_GREEN = "#76bc21"
@@ -63,9 +61,9 @@ st.markdown(f"""
     div[data-testid="stExpander"] {{ border: 1px solid #d0d4e4 !important; border-radius: 8px !important; margin-bottom: 12px; }}
     div[data-testid="stExpander"] details summary {{ background-color: {TB_LIGHT_BLUE} !important; padding: 12px !important; border-radius: 8px 8px 0 0 !important; }}
     div[data-testid="stExpander"] details summary p {{ color: #1e293b !important; font-weight: 700 !important; font-size: 16px !important; }}
-    div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 700 !important; font-size: 14px !important; }}
+    div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 700 !important; font-size: 14px !important; opacity: 1 !important; }}
     .stTextInput input, .stNumberInput input, .stDateInput input, div[data-baseweb="select"] > div {{ background-color: #FFFFFF !important; color: #000000 !important; border: 1px solid #323338 !important; opacity: 1 !important; }}
-    div[data-testid="stTextArea"] textarea {{ color: #000000 !important; background-color: #FFFFFF !important; border: 1px solid #323338 !important; font-weight: 600 !important; }}
+    div[data-testid="stTextArea"] textarea {{ color: #000000 !important; background-color: #FFFFFF !important; border: 1px solid #323338 !important; font-weight: 600 !important; opacity: 1 !important; }}
     div[data-testid="stTextArea"] label p {{ color: #000000 !important; font-weight: 800 !important; }}
     [data-testid="stMetricValue"] {{ color: #000000 !important; font-weight: 800 !important; }}
     [data-testid="stMetricLabel"] p {{ color: #444444 !important; font-weight: 700 !important; text-transform: uppercase !important; }}
@@ -110,10 +108,12 @@ def get_metrics(home, cluster_nodes, stop_rate):
     unique_addrs = list(set([c['full_addr'] for c in cluster_nodes]))
     mi, hrs, t_str = fetch_gmaps_directions(home, tuple(unique_addrs[:10]))
     stop_count = len(unique_addrs)
+    
+    # PAY CALCULATOR: Correct Logic
     pay = max(stop_count * stop_rate, hrs * HOURLY_FLOOR_RATE)
-    eff_hourly = pay / hrs if hrs > 0 else 0
+    
     eff_per_stop = pay / stop_count if stop_count > 0 else 0
-    return round(mi, 1), t_str, round(pay, 2), round(eff_hourly, 2), round(eff_per_stop, 2)
+    return round(mi, 1), t_str, round(pay, 2), round(eff_per_stop, 2)
 
 def sync_to_sheet(ic, cluster_data, mi, time_str, pay, work_order, loc_sum, due_date):
     payload = {
@@ -124,7 +124,7 @@ def sync_to_sheet(ic, cluster_data, mi, time_str, pay, work_order, loc_sum, due_
         "taskIds": ",".join([c['id'] for c in cluster_data])
     }
     try:
-        res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload})
+        res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}, allow_redirects=True)
         if res.status_code == 200 and res.json().get("success"): return res.json().get("routeId")
     except: pass
     return False
@@ -134,7 +134,7 @@ def load_ic_database(sheet_url):
     try: return pd.read_csv(f"{sheet_url.split('/edit')[0]}/export?format=csv&gid=0")
     except: return None
 
-# --- CORE PROCESSING ---
+# --- PROCESSING ---
 def process_pod_data(pod_name):
     config = POD_CONFIGS[pod_name]
     ui_container = st.empty()
@@ -209,10 +209,10 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     due = c_due.date_input("Due Date", datetime.now().date() + timedelta(days=14), key=f"d_{i}_{pod_name}")
     
     sel_ic = ic_opts[sel_label]
-    mi, t_str, pay, hourly_eff, stop_eff = get_metrics(sel_ic['Location'], cluster['data'], rate)
+    mi, t_str, pay, eff_stop = get_metrics(sel_ic['Location'], cluster['data'], rate)
     
-    # Visual Red if BOTH barriers hit
-    is_critical = (hourly_eff >= HOURLY_REVIEW_LIMIT and stop_eff >= STOP_REVIEW_LIMIT)
+    # Visual Red if Over requested $23/stop limit
+    is_critical = eff_stop > REVIEW_PER_STOP_LIMIT
     box_color = TB_RED if is_critical else "#f8fafc"
     txt_c = "white" if is_critical else "black"
 
@@ -220,7 +220,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
         <div style="background-color: {box_color}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
             <span style="color: {'white' if is_critical else '#444444'}; font-weight: 800; font-size: 10px; text-transform: uppercase;">Route Financials</span><br>
             <span style="color: {txt_c}; font-weight: 700; font-size: 16px;">Comp: <span style="color: {TB_GREEN if not is_critical else '#ffcccc'};">${pay:.2f}</span></span> | 
-            <span style="color: {txt_c}; font-weight: 600;">Time: {t_str}</span> | <span style="color: {txt_c}; font-weight: 600;">Rate: ${hourly_eff}/hr</span> | <span style="color: {txt_c}; font-weight: 600;">Eff: ${stop_eff}/stop</span>
+            <span style="color: {txt_c}; font-weight: 600;">Time: {t_str}</span> | <span style="color: {txt_c}; font-weight: 600;">Avg: ${eff_stop}/stop</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -263,15 +263,18 @@ def run_pod_tab(pod_name):
         
         has_ic = v_ics.apply(lambda x: haversine(c['center'][0], c['center'][1], x['Lat'], x['Lng']), axis=1).le(MAX_DEADHEAD_MILES).any() if not v_ics.empty else False
         
+        # 🎯 THE GATEKEEPER LOGIC:
         mi, hrs, _ = fetch_gmaps_directions(f"{c['center'][0]},{c['center'][1]}", tuple([d['full_addr'] for d in c['data'][:10]]))
-        calc_pay = max(c['unique_count'] * 18.0, hrs * HOURLY_FLOOR_RATE)
-        eff_hr = calc_pay / hrs if hrs > 0 else 0
-        eff_stop = calc_pay / c['unique_count'] if c['unique_count'] > 0 else 0
         
-        # CATEGORIZATION: Review tab if BOTH barriers hit
-        if has_ic and not (eff_hr >= HOURLY_REVIEW_LIMIT and eff_stop >= STOP_REVIEW_LIMIT):
+        # Calculation: (Hours * $25) / Stops
+        total_time_cost = hrs * HOURLY_FLOOR_RATE
+        avg_per_stop = total_time_cost / c['unique_count'] if c['unique_count'] > 0 else 0
+        
+        # Check against $23/stop limit
+        if has_ic and avg_per_stop <= REVIEW_PER_STOP_LIMIT:
             ready.append(c)
-        else: review.append(c)
+        else: 
+            review.append(c)
 
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.markdown(f"<div class='metric-box'><div class='metric-title'>Total</div><div class='metric-value'>{len(clusters)}</div></div>", unsafe_allow_html=True)
