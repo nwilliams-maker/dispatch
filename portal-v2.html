@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Route Authorization Portal | Terraboost Media</title>
+    <title>Work Order Dispatch | Terraboost Media</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
     <script>
@@ -11,10 +11,7 @@
             theme: {
                 extend: {
                     colors: {
-                        tb: {
-                            purple: '#633094', blue: '#4c6ef5', green: '#76bc21',
-                            lightBlue: '#eef2ff', darkText: '#1e293b', grayText: '#64748b'
-                        }
+                        tb: { navy: '#1a2236', blue: '#4c6ef5', green: '#76bc21', bg: '#f1f5f9' }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'], signature: ['Dancing Script', 'cursive'] }
                 }
@@ -22,194 +19,205 @@
         }
     </script>
     <style>
-        /* Mobile-First Tweaks */
-        body { -webkit-tap-highlight-color: transparent; }
-        .brand-header-bg { background-color: #0c1220; }
-        .form-card { border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; background: #ffffff; }
-        .gradient-top-bar { height: 6px; background: linear-gradient(90deg, #4c6ef5 0%, #633094 50%, #4c6ef5 100%); }
-        
-        /* Signature remains legible on mobile */
-        .ic-sig-font { 
-            font-family: 'Dancing Script', cursive; 
-            font-size: 2.5rem; 
-            color: #0c1220; 
-            border-bottom: 2px solid #cbd5e1; 
-            background: transparent; 
-            width: 100%; 
-            padding: 0; 
-            line-height: 1.2; 
-            height: auto; 
-            outline: none;
-        }
-
-        .decision-btn { border: 2px solid #e2e8f0; background-color: #f8fafc; cursor: pointer; transition: all 0.2s; }
-        input[type="radio"]:checked + .decision-btn-accepted { border-color: #76bc21; color: #76bc21; background-color: white; }
-        input[type="radio"]:checked + .decision-btn-declined { border-color: #ef4444; color: #ef4444; background-color: white; }
-
-        .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #ffffff; width: 18px; height: 18px; animation: spin 1s linear infinite; }
+        body { background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+        .form-card { border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); border: 1px solid #e2e8f0; background: #ffffff; }
+        .ic-sig-font { font-family: 'Dancing Script', cursive; font-size: 3.5rem; color: #0f172a; border-bottom: 2px solid #94a3b8; background: transparent; width: 100%; padding: 0; line-height: 1; height: auto; outline: none; }
+        .decision-pill { border: 2px solid #e2e8f0; background: #f8fafc; transition: all 0.2s; cursor: pointer; }
+        input[type="radio"]:checked + .decision-pill-accept { border-color: #76bc21; color: #76bc21; background: #fff; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        input[type="radio"]:checked + .decision-pill-decline { border-color: #ef4444; color: #ef4444; background: #fff; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #3b82f6; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Smooth stack for mobile */
-        @media (max-width: 768px) {
-            .ic-sig-font { font-size: 2rem; }
-            .p-mobile { padding: 1.25rem !important; }
-        }
     </style>
 </head>
-<body class="bg-[#f4f7fa] font-sans text-tb-darkText p-2 md:p-10">
+<body class="p-2 md:p-8 lg:p-12">
 
-    <div class="max-w-[1200px] mx-auto form-card">
-        
-        <div class="brand-header-bg p-4 md:p-6 text-white flex justify-between items-center">
-            <div class="flex items-center gap-3 md:gap-5">
-                <div class="bg-white p-1.5 rounded-lg">
-                    <div class="bg-[#0c1220] text-white font-black text-xl md:text-2xl px-2 py-1 rounded">TBM</div>
+    <div id="captureArea" class="max-w-[1200px] mx-auto form-card">
+        <div class="bg-tb-navy p-6 md:p-8 text-white flex justify-between items-center">
+            <div class="flex items-center gap-4 md:gap-6">
+                <div class="bg-white p-2.5 rounded-xl shadow-lg">
+                    <div class="bg-slate-900 text-white font-black text-2xl md:text-3xl px-4 py-2 rounded-lg">TBM</div>
                 </div>
                 <div>
-                    <h1 class="text-lg md:text-2xl font-extrabold tracking-tight leading-none">Terraboost</h1>
-                    <p class="text-tb-purple text-[8px] md:text-[9px] uppercase font-black tracking-[0.1em] mt-1">Authorization Portal</p>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Terraboost Media</h1>
+                    <p class="text-blue-400 text-[9px] md:text-[10px] uppercase font-black tracking-[0.2em] opacity-90 mt-1">Route Authorization Portal</p>
                 </div>
             </div>
-            <button onclick="location.reload()" class="text-[10px] font-black text-tb-grayText uppercase border border-slate-700 px-3 py-1 rounded-full hover:bg-slate-800">Reset</button>
+            <button onclick="location.reload()" class="hidden md:block text-[10px] font-black text-slate-400 uppercase border border-slate-700 px-4 py-2 rounded-lg hover:bg-slate-800 transition">Reset Portal</button>
         </div>
 
-        <div class="gradient-top-bar"></div>
+        <div id="loadingOverlay" class="py-32 text-center">
+            <div class="spinner border-slate-300 border-t-tb-blue mx-auto mb-4"></div>
+            <p class="font-bold text-slate-500 uppercase tracking-widest text-xs">Loading Route Intelligence...</p>
+        </div>
 
-        <form id="mainForm" class="p-mobile p-8 md:p-12 space-y-8 md:space-y-12">
-            <div id="routeLoading" class="text-center py-20">
-                <div class="spinner border-slate-400 border-t-tb-purple mx-auto mb-4"></div>
-                <p class="text-sm font-bold text-slate-500 uppercase tracking-widest">Securing Route Intel...</p>
-            </div>
-
-            <div id="routeContent" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
+        <form id="dispatchForm" class="hidden p-4 md:p-10 lg:p-12 space-y-12">
+            <div id="icMode" class="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 
-                <div class="lg:col-span-5 order-1">
-                    <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white relative shadow-sm">
-                        <div class="absolute top-0 left-0 w-1.5 h-full bg-tb-purple"></div>
-                        <div class="p-5 md:p-8 space-y-4 md:space-y-6">
-                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Work Order Summary</h3>
-                            <div id="summaryZone" class="space-y-3 md:space-y-4 text-xs md:text-sm font-medium">
+                <div class="lg:col-span-5 space-y-8">
+                    <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-tb-blue"></div>
+                        
+                        <div class="space-y-6">
+                            <div class="space-y-1">
+                                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Route Authorization</h3>
+                                <p class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Route Summary</p>
+                            </div>
+
+                            <div id="summaryZone" class="space-y-4 text-sm font-medium">
                                 </div>
                         </div>
                     </div>
+                    
+                    <div class="space-y-4">
+                        <button type="button" onclick="launchPreview(11)" class="w-full bg-slate-900 text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest text-[11px] flex justify-center items-center gap-3 hover:bg-black transition">
+                            <span>🗺️</span> View Route Preview <span class="opacity-50 text-[9px]">(Up to 11 stops)</span>
+                        </button>
+                        <button type="button" onclick="copyMapUrl()" class="w-full bg-white border-2 border-slate-100 text-slate-400 font-bold py-4 rounded-xl text-[10px] uppercase tracking-widest flex justify-center items-center gap-2 hover:border-slate-200 transition">
+                            <span>🔗</span> Copy Browser Link <span class="opacity-50">(Full Route)</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="lg:col-span-7 space-y-8 order-2">
-                    <div class="grid grid-cols-2 gap-3 md:gap-5">
+                <div class="lg:col-span-7 space-y-10">
+                    <div class="grid grid-cols-2 gap-4">
                         <label class="relative">
-                            <input type="radio" name="decision" value="Accepted" class="sr-only" checked onchange="toggleFormView()">
-                            <div class="decision-btn decision-btn-accepted text-center py-4 md:py-5 rounded-xl font-black text-tb-grayText uppercase tracking-widest text-[10px] md:text-xs">Accept</div>
+                            <input type="radio" name="ic_decision" value="Accepted" class="sr-only" checked onchange="toggleView()">
+                            <div class="decision-pill decision-pill-accept text-center py-5 rounded-2xl text-emerald-600 font-black text-[11px] uppercase tracking-widest">Accept Route</div>
                         </label>
                         <label class="relative">
-                            <input type="radio" name="decision" value="Declined" class="sr-only" onchange="toggleFormView()">
-                            <div class="decision-btn decision-btn-declined text-center py-4 md:py-5 rounded-xl font-black text-tb-grayText uppercase tracking-widest text-[10px] md:text-xs">Decline</div>
+                            <input type="radio" name="ic_decision" value="Declined" class="sr-only" onchange="toggleView()">
+                            <div class="decision-pill decision-pill-decline text-center py-5 rounded-2xl text-red-600 font-black text-[11px] uppercase tracking-widest">Decline Route</div>
                         </label>
                     </div>
 
-                    <div id="declineInputs" class="hidden space-y-4">
-                        <label class="text-[10px] uppercase font-black tracking-widest text-slate-500">Reason / Notes</label>
-                        <textarea id="notes" rows="3" class="w-full p-4 rounded-xl border border-slate-300 outline-none focus:border-tb-blue transition text-sm"></textarea>
+                    <div id="declineBlock" class="hidden space-y-6">
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Reason for Decline / Counter Offer ($)</label>
+                        <textarea id="ic_notes" rows="4" class="w-full p-4 rounded-2xl border border-slate-200 outline-none focus:border-tb-blue transition"></textarea>
                     </div>
 
-                    <div id="acceptInputs" class="space-y-6">
-                        <div>
-                            <label class="text-tb-purple uppercase font-black text-[9px] md:text-[10px] tracking-widest mb-4">Electronic Signature</label>
-                            <input type="text" id="legalSignature" placeholder="Type Legal Name" class="ic-sig-font" oninput="liveSigUpdate(this.value)">
+                    <div id="acceptBlock" class="space-y-10">
+                        <div class="space-y-4">
+                            <label class="text-tb-blue font-black uppercase text-[10px] tracking-[0.2em]">Electronic Signature</label>
+                            <input type="text" id="typed_sig" placeholder="Click Here, Type Legal Name" class="ic-sig-font" oninput="updateSig(this.value)">
                         </div>
-                        
-                        <div class="flex items-start gap-3 p-4 bg-tb-lightBlue rounded-xl border border-blue-100">
-                            <input type="checkbox" id="consentCheckbox" class="mt-1 h-5 w-5 rounded border-slate-300 text-tb-blue focus:ring-tb-blue">
-                            <label for="consentCheckbox" class="normal-case font-medium text-tb-grayText text-[11px] leading-snug">
-                                I, <span id="sigPlaceholder" class="font-bold text-tb-blue border-b border-tb-blue">________________</span>, certify that I am an Independent Contractor authorizing this work order.
+
+                        <div class="flex items-start gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                            <input type="checkbox" id="legal_consent" class="mt-1 h-5 w-5 rounded border-slate-300 text-tb-blue focus:ring-tb-blue cursor-pointer">
+                            <label for="legal_consent" class="text-[11px] font-medium text-slate-600 leading-relaxed cursor-pointer select-none">
+                                I, <span id="live_sig" class="text-tb-blue font-black border-b border-tb-blue px-1">________________</span>, hereby certify that I am an Independent Contractor. I have reviewed the proposed route locations and compensation.
                             </label>
                         </div>
                     </div>
 
-                    <button type="button" id="submitButton" onclick="handleFormSubmission()" class="w-full bg-tb-blue hover:bg-[#3d5ed9] text-white font-black py-5 md:py-6 rounded-xl shadow-xl uppercase tracking-[0.2em] text-xs md:text-sm btn-modern">
+                    <button type="button" id="submitBtn" onclick="submitFinal()" class="w-full bg-tb-blue text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-200 uppercase tracking-[0.25em] text-sm hover:bg-blue-700 transition">
                         Submit Final Response
                     </button>
                 </div>
             </div>
-            
-            <div id="completeView" class="hidden text-center py-20 md:py-32 space-y-4">
-                <div class="text-6xl">✅</div>
-                <h2 class="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">Success</h2>
-                <p class="text-slate-500 text-sm font-medium">Response logged. You may close this window.</p>
+
+            <div id="successView" class="hidden text-center py-24 space-y-6">
+                <div class="text-7xl">✅</div>
+                <h2 class="text-4xl font-black text-slate-900 uppercase tracking-tight">Response Recorded</h2>
+                <p class="text-slate-500 font-medium">Your response has been logged. You may now close this window.</p>
             </div>
         </form>
     </div>
 
     <script>
-        const GAS_WEB_APP = "https://script.google.com/macros/s/AKfycbynAIziubArSQ0hVGTvJMpk11a9yLP0kNcSmGpcY7GDNRT25Po5p92K3EDslx9VycKC/exec";
-        const FORMSPREE_API = "https://formspree.io/f/meerlqll";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbynAIziubArSQ0hVGTvJMpk11a9yLP0kNcSmGpcY7GDNRT25Po5p92K3EDslx9VycKC/exec";
+        const FORMSPREE = "https://formspree.io/f/meerlqll";
         const params = new URLSearchParams(window.location.search);
         const routeId = params.get('route');
 
         window.onload = async () => {
-            if (!routeId) {
-                document.getElementById('routeLoading').innerHTML = `<p class="text-red-500 font-bold p-10">⚠️ Missing ID</p>`;
-                return;
-            }
+            if (!routeId) return document.getElementById('loadingOverlay').innerHTML = "Missing Route ID";
+
             try {
-                const res = await fetch(`${GAS_WEB_APP}?action=getRoute&routeId=${routeId}`);
+                const res = await fetch(`${GAS_URL}?action=getRoute&routeId=${routeId}`);
                 const data = await res.json();
                 if (data.error) throw new Error(data.error);
-                window.cachedData = data.payload;
+                window.routeData = data.payload;
 
                 document.getElementById('summaryZone').innerHTML = `
-                    <div class="flex justify-between border-b pb-2 mb-2 text-slate-400 font-bold uppercase text-[9px]"><span>Details</span></div>
-                    <div class="flex justify-between border-b border-slate-100 pb-2 mb-2"><span>Contractor</span> <span class="text-slate-900">${window.cachedData.icn}</span></div>
-                    <div class="flex justify-between text-tb-blue font-bold pb-2 mb-2 border-b border-slate-100"><span>Work Order</span> <span>${window.cachedData.wo}</span></div>
-                    <div class="flex justify-between pb-2 mb-2 border-b border-slate-100"><span>Stops</span> <span>${window.cachedData.lCnt}</span></div>
-                    <div class="flex justify-between pb-2 mb-2"><span>Est. Time</span> <span>${window.cachedData.time}</span></div>
-                    <div class="flex justify-between pt-4 text-3xl font-black text-tb-green border-t border-slate-200"><span>Pay</span> <span>$${window.cachedData.comp}</span></div>
+                    <div class="flex justify-between items-center py-1"><span>Contractor:</span><span class="text-slate-900 font-bold">${window.routeData.icn}</span></div>
+                    <div class="flex justify-between items-center py-1 text-tb-blue"><span>Work Order #:</span><span class="font-bold underline tracking-tight">${window.routeData.wo}</span></div>
+                    <div class="flex justify-between items-center py-1"><span>Due Date:</span><span class="text-slate-900 font-bold">${window.routeData.due || '---'}</span></div>
+                    <div class="flex justify-between items-center py-1"><span>Unique Locations:</span><span class="text-slate-900 font-bold">${window.routeData.lCnt}</span></div>
+                    <div class="flex justify-between items-center py-1"><span>Total Tasks:</span><span class="text-slate-900 font-bold">${window.routeData.tCnt}</span></div>
+                    <div class="flex justify-between items-center py-1"><span>Est. Drive Time:</span><span class="text-slate-900 font-bold">${window.routeData.time}</span></div>
+                    <div class="flex justify-between items-center py-1"><span>Mileage:</span><span class="text-slate-900 font-bold">${window.routeData.mi} Miles</span></div>
+                    <div class="flex justify-between items-center pt-6 mt-2 border-t border-slate-100 font-black text-5xl text-tb-green leading-none">
+                        <span>Total Comp:</span><span>$${window.routeData.comp}</span>
+                    </div>
                 `;
-                document.getElementById('routeLoading').classList.add('hidden');
-                document.getElementById('routeContent').classList.remove('hidden');
+
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('dispatchForm').classList.remove('hidden');
             } catch (e) {
-                document.getElementById('routeLoading').innerHTML = `<p class="text-red-500 font-bold p-10">⚠️ System Error</p>`;
+                document.getElementById('loadingOverlay').innerHTML = `<p class="text-red-500 font-bold uppercase tracking-widest text-xs">Error: ${e.message}</p>`;
             }
         };
 
-        async function handleFormSubmission() {
-            const decision = document.querySelector('input[name="decision"]:checked').value;
-            const signature = document.getElementById('legalSignature').value;
-            const consent = document.getElementById('consentCheckbox').checked;
-            const btn = document.getElementById('submitButton');
+        // --- MAPS LOGIC ---
+        function getMapsUrl(limit) {
+            if (!window.routeData || !window.routeData.locs) return null;
+            const stops = window.routeData.locs.split(' | ');
+            const slice = stops.slice(0, limit);
+            const origin = encodeURIComponent(slice[0]);
+            const dest = encodeURIComponent(slice[slice.length - 1]);
+            const waypoints = slice.slice(1, -1).map(s => encodeURIComponent(s)).join('|');
+            return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${waypoints}&travelmode=driving`;
+        }
 
-            if (decision === 'Accepted' && (!signature || !consent)) {
-                return alert("Signature and consent required.");
+        function launchPreview(limit) {
+            const url = getMapsUrl(limit);
+            if (url) window.open(url, '_blank');
+        }
+
+        function copyMapUrl() {
+            const url = getMapsUrl(20);
+            if (url) {
+                navigator.clipboard.writeText(url);
+                alert("Maps Route Link Copied to Clipboard!");
             }
+        }
+
+        async function submitFinal() {
+            const decision = document.querySelector('input[name="ic_decision"]:checked').value;
+            const sig = document.getElementById('typed_sig').value;
+            const consent = document.getElementById('legal_consent').checked;
+            const btn = document.getElementById('submitBtn');
+
+            if (decision === 'Accepted' && (!sig || !consent)) return alert("Signature and Consent required.");
 
             btn.disabled = true;
-            btn.innerHTML = `<div class="flex items-center justify-center gap-2"><div class="spinner"></div><span>SENDING...</span></div>`;
+            btn.innerHTML = `<div class="flex items-center justify-center gap-3"><div class="spinner"></div><span>SUBMITTING...</span></div>`;
 
             try {
-                await fetch(GAS_WEB_APP, {
+                await fetch(GAS_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: "authorizeRoute", routeId: routeId, decision: decision, signature: signature, notes: document.getElementById('notes').value })
+                    body: JSON.stringify({ action: "authorizeRoute", routeId: routeId, decision: decision, signature: sig, notes: document.getElementById('ic_notes').value })
                 });
-                await fetch(FORMSPREE_API, {
+                await fetch(FORMSPREE, {
                     method: 'POST',
                     headers: { 'Accept': 'application/json' },
-                    body: JSON.stringify({ Subject: `${decision}: WO ${window.cachedData.wo}`, Decision: decision, Contractor: window.cachedData.icn, Pay: `$${window.cachedData.comp}`, Signature: signature || 'N/A' })
+                    body: JSON.stringify({ Subject: `${decision}: WO ${window.routeData.wo}`, Contractor: window.routeData.icn, Comp: `$${window.routeData.comp}`, Sig: sig, Notes: document.getElementById('ic_notes').value })
                 });
-                document.getElementById('routeContent').classList.add('hidden');
-                document.getElementById('completeView').classList.remove('hidden');
+                document.getElementById('icMode').classList.add('hidden');
+                document.getElementById('successView').classList.remove('hidden');
             } catch (e) {
-                alert("Failed. Try again.");
-                btn.disabled = false;
-                btn.innerText = "Submit Final Response";
+                alert("Submission failed. Please try again.");
+                btn.disabled = false; btn.innerText = "Submit Final Response";
             }
         }
 
-        function toggleFormView() {
-            const d = document.querySelector('input[name="decision"]:checked').value;
-            document.getElementById('declineInputs').classList.toggle('hidden', d === 'Accepted');
-            document.getElementById('acceptInputs').classList.toggle('hidden', d === 'Declined');
+        function toggleView() {
+            const val = document.querySelector('input[name="ic_decision"]:checked').value;
+            document.getElementById('acceptBlock').classList.toggle('hidden', val === 'Declined');
+            document.getElementById('declineBlock').classList.toggle('hidden', val === 'Accepted');
         }
 
-        function liveSigUpdate(val) { document.getElementById('sigPlaceholder').innerText = val || "________________"; }
+        function updateSig(val) { document.getElementById('live_sig').innerText = val || "________________"; }
     </script>
 </body>
 </html>
