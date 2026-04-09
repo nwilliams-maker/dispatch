@@ -239,7 +239,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
         else: st.markdown('<div style="background:#e2e8f0;color:#94a3b8;padding:10px;text-align:center;border-radius:4px;font-weight:bold;">📧 Sync First</div>', unsafe_allow_html=True)
 
 def run_pod_tab(pod_name):
-    st.markdown(f"<h2>{pod_name} Command Center</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2>{pod_name} </h2>", unsafe_allow_html=True)
     if f"clusters_{pod_name}" not in st.session_state:
         if st.button(f"📥 Initialize {pod_name}", key=f"init_{pod_name}"): process_pod_data(pod_name); st.rerun()
         return
@@ -286,7 +286,7 @@ def run_pod_tab(pod_name):
 
 # --- GLOBAL TAB ---
 def run_global_tab():
-    st.markdown("## 🌎 Global Network Overview")
+    st.markdown("## 🌎 Global Dispatch Overview")
     if st.button("🚀 Sync Global Network"):
         p_bar = st.progress(0, text="Initializing Network Sweep...")
         pods = list(POD_CONFIGS.keys())
@@ -299,7 +299,7 @@ def run_global_tab():
 
 # --- MAIN ---
 if "ic_df" not in st.session_state: st.session_state.ic_df = load_ic_database(IC_SHEET_URL)
-st.markdown("<h1>Network Command Center</h1>", unsafe_allow_html=True)
+st.markdown("<h1>Dispatch Command Center</h1>", unsafe_allow_html=True)
 tabs = st.tabs(["🌎 Global", "🔵 Blue Pod", "🟢 Green Pod", "🟠 Orange Pod", "🟣 Purple Pod", "🔴 Red Pod"])
 with tabs[0]: run_global_tab()
 with tabs[1]: run_pod_tab("Blue Pod")
