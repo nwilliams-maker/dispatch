@@ -54,61 +54,24 @@ st.set_page_config(page_title="Terraboost Tactical Workspace", layout="wide")
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-    
-    /* 1. Global App Body */
-    .stApp {{ 
-        background-color: #f4f5f7 !important; 
-        color: #000000 !important; 
-        font-family: 'Roboto', sans-serif !important; 
-    }}
-
-    /* 2. Targeted Fix: Widget Labels (Contractor, Rate, etc.) */
-    div[data-testid="stWidgetLabel"] p {{ 
-        color: #000000 !important; 
-        font-weight: 700 !important; 
-        font-size: 14px !important; 
-        opacity: 1 !important; 
-    }}
-
-    /* 3. Targeted Fix: Email Payload Box (image_b8d963 fix) */
-    div[data-testid="stTextArea"] textarea {{
-        color: #000000 !important;
-        background-color: #FFFFFF !important;
-        border: 1px solid #323338 !important;
-        font-weight: 600 !important;
-        opacity: 1 !important;
-    }}
-    div[data-testid="stTextArea"] label p {{
-        color: #000000 !important;
-        font-weight: 800 !important;
-    }}
-
-    /* 4. Targeted Fix: Input Boxes & Select Boxes (image_b8e0c1 fix) */
-    .stTextInput input, .stNumberInput input, .stDateInput input, div[data-baseweb="select"] > div {{
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: 1px solid #323338 !important;
-        opacity: 1 !important;
-    }}
-
-    /* 5. Overview Metric Cards (image_ad879a fix) */
+    .stApp {{ background-color: #f4f5f7 !important; color: #000000 !important; font-family: 'Roboto', sans-serif !important; }}
+    div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 700 !important; font-size: 14px !important; opacity: 1 !important; }}
+    div[data-testid="stTextArea"] textarea {{ color: #000000 !important; background-color: #FFFFFF !important; border: 1px solid #323338 !important; font-weight: 600 !important; opacity: 1 !important; }}
+    div[data-testid="stTextArea"] label p {{ color: #000000 !important; font-weight: 800 !important; }}
+    .stTextInput input, .stNumberInput input, .stDateInput input, div[data-baseweb="select"] > div {{ background-color: #FFFFFF !important; color: #000000 !important; border: 1px solid #323338 !important; opacity: 1 !important; }}
     [data-testid="stMetricValue"] {{ color: #000000 !important; font-weight: 800 !important; }}
     [data-testid="stMetricLabel"] p {{ color: #444444 !important; font-weight: 700 !important; text-transform: uppercase !important; }}
-
-    /* 6. Financial Metric Boxes */
     .metric-box {{ border-left: 5px solid {TB_PURPLE}; padding: 12px 15px; margin-bottom: 15px; background: white; border-radius: 0 4px 4px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
     .metric-title {{ font-size: 11px; text-transform: uppercase; color: #444444 !important; font-weight: 800; }}
     .metric-value {{ font-size: 20px; color: {TB_PURPLE} !important; font-weight: 800; }}
-
-    /* 7. Headers & Tabs */
     h1, h2, h3 {{ color: {TB_PURPLE} !important; font-weight: 800 !important; }}
     .stTabs [data-baseweb="tab"] {{ color: #444444 !important; font-weight: 600 !important; }}
     .stTabs [aria-selected="true"] {{ color: {TB_PURPLE} !important; border-bottom: 3px solid {TB_GREEN} !important; }}
-
-    /* 8. Buttons */
     .stButton>button {{ background-color: {TB_PURPLE} !important; color: #FFFFFF !important; font-weight: 700 !important; border-radius: 6px !important; width: 100%; }}
     .stButton>button:hover {{ background-color: {TB_GREEN} !important; }}
-    
+    div[data-testid="stExpander"] {{ background-color: white !important; border: 1px solid #d0d4e4 !important; border-radius: 8px !important; margin-bottom: 12px; }}
+    div[data-testid="stExpander"] details summary p {{ color: #000000 !important; font-weight: 700 !important; font-size: 16px !important; }}
+    div[data-testid="stExpander"] details summary {{ background-color: {TB_LIGHT_BLUE} !important; padding: 12px !important; border-radius: 8px 8px 0 0 !important; }}
     #status {{ display: none !important; }}
     [data-testid="stStatusWidget"] {{ display: none !important; }}
     </style>
@@ -168,7 +131,6 @@ def load_ic_database(sheet_url):
     try: return pd.read_csv(f"{sheet_url.split('/edit')[0]}/export?format=csv&gid=0")
     except: return None
 
-# --- CORE PROCESSING LOGIC ---
 def process_pod_data(pod_name):
     config = POD_CONFIGS[pod_name]
     ui_container = st.empty()
@@ -207,19 +169,16 @@ def process_pod_data(pod_name):
         p_bar.progress(1.0, text="✅ Logic Applied")
     ui_container.empty()
 
-# --- UI RENDER FUNCTIONS ---
 def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     cluster_hash = hashlib.md5("".join(sorted([t['id'] for t in cluster['data']])).encode()).hexdigest()
-    sync_key = f"sync_{cluster_hash}"
-    sent_key = f"sent_log_{cluster_hash}"
+    sync_key = f"sync_{cluster_hash}"; sent_key = f"sent_log_{cluster_hash}"
     real_gas_id = st.session_state.get(sync_key, None)
     link_id = real_gas_id if real_gas_id else "LINK_GENERATED_UPON_SYNC"
 
     loc_sum = {}
     for c in cluster['data']:
-        addr = c['full_addr']
-        loc_sum[addr] = loc_sum.get(addr, 0) + 1
-    for addr, count in loc_sum.items(): st.markdown(f"- **{addr}** ({count} Tasks)")
+        addr = c['full_addr']; loc_sum[addr] = loc_sum.get(addr, 0) + 1
+    for addr, count in loc_sum.items(): st.markdown(f"• **{addr}** ({count} Tasks)")
     st.divider()
 
     if is_sent and sent_key in st.session_state:
@@ -227,10 +186,8 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
         st.info(f"📧 **Sent to:** {log['contractor']} | **Timestamp:** {log['time']}")
 
     ic_df = st.session_state.ic_df
-    # Filtering: Exclude "Field Agent"
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].copy()
     v_ics = v_ics.dropna(subset=['Lat', 'Lng'])
-    
     c_lat, c_lon = cluster['center']
     if not v_ics.empty:
         v_ics['d'] = v_ics.apply(lambda x: haversine(c_lat, c_lon, x['Lat'], x['Lng']), axis=1)
@@ -238,8 +195,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     else: valid_ics = pd.DataFrame()
 
     if valid_ics.empty:
-        st.error("⚠️ No Independent Contractors nearby. (Excluded Field Agents)")
-        return
+        st.error("⚠️ No Independent Contractors nearby."); return
 
     ic_opts = {f"{row['Name']} ({round(row['d'], 1)} mi)": row for _, row in valid_ics.iterrows()}
     c_ic, c_rate, c_due = st.columns([2, 1, 1])
@@ -252,15 +208,19 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     
     st.markdown(f"""
         <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
-            <span style="color: #444444; font-weight: 800; font-size: 10px; text-transform: uppercase;">Financials</span><br>
+            <span style="color: #444444; font-weight: 800; font-size: 10px; text-transform: uppercase;">Route Financials</span><br>
             <span style="color: #000000; font-weight: 700; font-size: 16px;">Comp: <span style="color: #16a34a;">${pay:.2f}</span></span> | 
             <span style="color: #000000; font-weight: 600;">Drive: {mi} mi</span> | <span style="color: #000000; font-weight: 600;">Time: {t_str}</span>
         </div>
     """, unsafe_allow_html=True)
 
     wo_title = f"{sel_ic['Name']} - {datetime.now().strftime('%m%d%Y')}-{i}"
-    sig = f"Work Order: {wo_title}\nDue Date: {due.strftime('%Y-%m-%d')}\nMetrics: {mi} mi, {t_str}\nPay: ${pay:.2f}\n\nAuthorize: {PORTAL_BASE_URL}?route={link_id}&v2=true"
-    st.text_area("Email Payload Preview", sig, height=180, key=f"area_{i}_{pod_name}_{link_id}")
+    loc_lines = [f"{idx + 1}. {a} ({count} Tasks)" for idx, (a, count) in enumerate(loc_sum.items())]
+    sig = (f"Work Order: {wo_title}\nContractor: {sel_ic['Name']}\nDue Date: {due.strftime('%A, %b %d, %Y')}\n\n"
+           f"Metrics:\n- Unique Stops: {cluster['unique_count']}\n- Mileage: {mi} mi\n- Time: {t_str}\n- Compensation: ${pay:.2f}\n\n"
+           f"STOP LOCATIONS:\n" + "\n".join(loc_lines) + f"\n\nAuthorize here:\n{PORTAL_BASE_URL}?route={link_id}&v2=true")
+    
+    st.text_area("Email Payload Preview", sig, height=250, key=f"area_{i}_{pod_name}_{link_id}")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -271,7 +231,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
         else: st.button("✅ Synced", disabled=True, key=f"btn_d_{i}_{pod_name}")
     with col2:
         if real_gas_id:
-            mail = f"https://mail.google.com/mail/?view=cm&fs=1&to={sel_ic['Email']}&su=Route Request&body={requests.utils.quote(sig)}"
+            mail = f"https://mail.google.com/mail/?view=cm&fs=1&to={sel_ic['Email']}&su=Route Request | {wo_title}&body={requests.utils.quote(sig)}"
             if st.button(f"📧 Send Gmail", key=f"log_sent_{i}_{pod_name}"):
                 st.session_state[sent_key] = {"contractor": sel_ic['Name'], "time": datetime.now().strftime("%I:%M %p")}
                 st.markdown(f'<script>window.open("{mail}", "_blank");</script>', unsafe_allow_html=True)
@@ -283,41 +243,31 @@ def run_pod_tab(pod_name):
     if f"clusters_{pod_name}" not in st.session_state:
         if st.button(f"📥 Initialize {pod_name}", key=f"init_{pod_name}"): process_pod_data(pod_name); st.rerun()
         return
-
     clusters = st.session_state[f"clusters_{pod_name}"]
     ic_df = st.session_state.ic_df
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']) if ic_df is not None else pd.DataFrame()
-    
     ready, review, sent = [], [], []
     for c in clusters:
-        c_hash = hashlib.md5("".join(sorted([t['id'] for t in c['data']])).encode()).hexdigest()
-        if f"sent_log_{c_hash}" in st.session_state:
-            sent.append(c); continue
-        
+        c_h = hashlib.md5("".join(sorted([t['id'] for t in c['data']])).encode()).hexdigest()
+        if f"sent_log_{c_h}" in st.session_state: sent.append(c); continue
         has_ic = False
         if not v_ics.empty:
             has_ic = v_ics.apply(lambda x: haversine(c['center'][0], c['center'][1], x['Lat'], x['Lng']), axis=1).le(MAX_DEADHEAD_MILES).any()
-        
         mi, hrs, _ = fetch_gmaps_directions(f"{c['center'][0]},{c['center'][1]}", tuple([d['full_addr'] for d in c['data'][:5]]))
-        pay = c['unique_count'] * 18.0 
-        efficiency_ok = (pay / hrs) >= HOURLY_FLOOR_RATE if hrs > 0 else True
-
-        if has_ic and efficiency_ok: ready.append(c)
+        eff_ok = ((c['unique_count'] * 18.0) / hrs) >= HOURLY_FLOOR_RATE if hrs > 0 else True
+        if has_ic and eff_ok: ready.append(c)
         else: review.append(c)
-
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.markdown(f"<div class='metric-box'><div class='metric-title'>Total</div><div class='metric-value'>{len(clusters)}</div></div>", unsafe_allow_html=True)
     c2.markdown(f"<div class='metric-box'><div class='metric-title' style='color:{TB_GREEN}'>Ready</div><div class='metric-value'>{len(ready)}</div></div>", unsafe_allow_html=True)
     c3.markdown(f"<div class='metric-box'><div class='metric-title' style='color:{TB_BLUE}'>Sent</div><div class='metric-value'>{len(sent)}</div></div>", unsafe_allow_html=True)
     c4.markdown(f"<div class='metric-box'><div class='metric-title' style='color:#f44336'>Review</div><div class='metric-value'>{len(review)}</div></div>", unsafe_allow_html=True)
     if c5.button("🔄 Refresh", key=f"ref_{pod_name}"): process_pod_data(pod_name); st.rerun()
-
     m = folium.Map(location=clusters[0]['center'], zoom_start=6, tiles="cartodbpositron")
     for c in ready: folium.CircleMarker(c['center'], radius=10, color=TB_GREEN, fill=True, opacity=0.7).add_to(m)
     for c in sent: folium.CircleMarker(c['center'], radius=10, color=TB_BLUE, fill=True, opacity=0.7).add_to(m)
     for c in review: folium.CircleMarker(c['center'], radius=10, color="#f44336", fill=True, opacity=0.7).add_to(m)
     st_folium(m, use_container_width=True, height=450, key=f"map_{pod_name}")
-
     t1, t2, t3 = st.tabs(["🟢 Ready", "📧 Sent", "🔴 Review"])
     with t1:
         for i, c in enumerate(ready):
@@ -331,7 +281,7 @@ def run_pod_tab(pod_name):
 
 # --- MAIN ---
 if "ic_df" not in st.session_state: st.session_state.ic_df = load_ic_database(IC_SHEET_URL)
-st.markdown("<h1>Dispatch Command Center</h1>", unsafe_allow_html=True)
+st.markdown("<h1>Network Command Center</h1>", unsafe_allow_html=True)
 tabs = st.tabs(["🌎 Global", "🔵 Blue Pod", "🟢 Green Pod", "🟠 Orange Pod", "🟣 Purple Pod", "🔴 Red Pod"])
 with tabs[1]: run_pod_tab("Blue Pod")
 with tabs[2]: run_pod_tab("Green Pod")
