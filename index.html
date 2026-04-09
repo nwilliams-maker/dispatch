@@ -293,7 +293,11 @@
         let allContractors = [];
         let activeCampaignFilter = ""; 
         
-        const webAppUrl = "https://script.google.com/macros/s/AKfycbynAIziubArSQ0hVGTvJMpk11a9yLP0kNcSmGpcY7GDNRT25Po5p92K3EDslx9VycKC/exec"; 
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // !!! PASTE YOUR NEW GOOGLE SCRIPT URL RIGHT HERE INSIDE THE QUOTES  !!!
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        const webAppUrl = "YOUR-NEW-URL-HERE"; 
+
         const formspreeUrl = "https://formspree.io/f/meerlqll"; 
         const PRIMARY_FORMSPREE_EMAIL = "nwilliams@terraboost.biz";
 
@@ -556,7 +560,6 @@
 
             if (needGeocode.length === 0) return;
 
-            // PERFORMANCE FIX: Processes missing GPS coordinates 3x faster in parallel batches!
             for (let i = 0; i < needGeocode.length; i += 3) {
                 const batch = needGeocode.slice(i, i + 3);
                 await Promise.all(batch.map(async (c) => {
@@ -591,7 +594,7 @@
                         updateCounter();
                     }
                 }));
-                await new Promise(r => setTimeout(r, 250)); // Small delay to protect Google Maps API
+                await new Promise(r => setTimeout(r, 250)); 
             }
         }
 
@@ -602,10 +605,10 @@
                 title: `${c.name} (${c.email})`, 
                 icon: {
                     path: google.maps.SymbolPath.CIRCLE,
-                    scale: 3, 
+                    scale: 6, 
                     fillColor: "#facc15", 
-                    fillOpacity: 1,
-                    strokeWeight: 1,
+                    fillOpacity: 0.5, 
+                    strokeWeight: 1.5,
                     strokeColor: "#000000"
                 },
                 zIndex: 10 
@@ -698,8 +701,12 @@
             let url = `${webAppUrl}?action=getOnfleetTasks`;
             if (homeAddress) url += `&homeAddress=${encodeURIComponent(homeAddress)}`;
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 25000);
+
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await response.json();
                 
                 if (data.error) throw new Error(data.error);
@@ -828,7 +835,12 @@
                     syncStatusEl.innerHTML = `<span class="text-emerald-500">✓ ${tasks.length} TASKS PULLED @ ${now}</span>`;
                 }
             } catch (e) { 
-                alert("Sync Error: " + e.message); 
+                clearTimeout(timeoutId);
+                if (e.name === 'AbortError') {
+                    alert("⚠️ Map Sync timed out! Google Script is taking too long to respond. Ensure your Web App is deployed with 'Who has access' set to 'Anyone'.");
+                } else {
+                    alert("Sync Error: " + e.message); 
+                }
             }
             finally { loader.classList.add('hidden'); }
         }
@@ -1163,9 +1175,8 @@
             btn.disabled = true;
             btn.innerHTML = "<span class='spinner inline-block w-4 h-4 border-2 mr-2' style='border-top-color:transparent;'></span> SAVING ROUTE TO DATABASE...";
 
-            // PERFORMANCE FIX: Safety timeout aborts if Google is blocking the connection!
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); 
+            const timeoutId = setTimeout(() => controller.abort(), 20000); 
 
             try {
                 const dispatchNotes = document.getElementById('dispatch_notes').value.trim();
@@ -1254,7 +1265,7 @@
                 console.error(err);
                 
                 if (err.name === 'AbortError') {
-                    alert("⚠️ Request timed out!\n\nGoogle Apps Script is not responding. Please open Google Apps Script, click 'Deploy > Manage Deployments > Edit', and make sure 'Who has access' is set to 'Anyone' (NOT 'Anyone with a Google Account').");
+                    alert("⚠️ Request timed out! Google Apps Script is not responding.\n\nPlease open Google Apps Script, click 'Deploy > Manage Deployments > Edit', and make sure 'Who has access' is set to 'Anyone' (NOT 'Anyone with a Google Account').\n\nThen update the URL in your HTML code.");
                 } else {
                     alert("Error saving route:\n\n" + err.message); 
                 }
@@ -1531,8 +1542,11 @@
                 emailDate = parts.length === 3 ? `${parts[1]}/${parts[2]}/${parts[0]}` : window.payloadData.due;
             }
 
+            // ADDED NAME AND _REPLYTO SO FORMSPREE DOES NOT MARK IT AS SPAM!
             const formData = {
-                "email": window.payloadData.ice,
+                "name": window.payloadData.icn, 
+                "email": window.payloadData.ice, 
+                "_replyto": window.payloadData.ice, 
                 "Decision": decision,
                 "Contractor": window.payloadData.icn,
                 "Work Order": window.payloadData.wo,
