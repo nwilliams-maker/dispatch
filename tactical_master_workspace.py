@@ -129,12 +129,12 @@ def load_ic_database(sheet_url):
     try: return pd.read_csv(f"{sheet_url.split('/edit')[0]}/export?format=csv&gid=0")
     except: return None
 
-# --- AGGRESSIVE 50-MILE ROUTING ---
+# --- AGGRESSIVE 50-MILE CLUSTERING ---
 def process_pod_data(pod_name):
     config = POD_CONFIGS[pod_name]
     ui_container = st.empty()
     with ui_container.container():
-        p_bar = st.progress(0, text=f"📡 Synchronizing {pod_name} Intelligence...")
+        p_bar = st.progress(0, text=f"📡 Synchronizing {pod_name}...")
         all_tasks = []
         url = f"https://onfleet.com/api/v2/tasks/all?state=0&from={int(time.time() * 1000) - (80 * 24 * 3600 * 1000)}"
         while True:
@@ -151,10 +151,14 @@ def process_pod_data(pod_name):
             a = t.get('destination', {}).get('address', {})
             stt = normalize_state(a.get('state', ''))
             if stt in config['states']:
-                pool.append({"id": t['id'], "city": a.get('city', 'Unknown'), "state": stt,
+                pool.append({
+                    "id": t['id'], 
+                    "city": a.get('city', 'Unknown'), 
+                    "state": stt,
                     "full_addr": f"{a.get('number', '')} {a.get('street', '')}, {a.get('city', '')}, {stt}",
                     "lat": t.get('destination', {}).get('location', [0, 0])[1],
-                    "lon": t.get('destination', {}).get('location', [0, 0])[0]})
+                    "lon": t.get('destination', {}).get('location', [0, 0])[0]
+                })
 
         clusters = []
         while pool:
@@ -163,16 +167,23 @@ def process_pod_data(pod_name):
             for t in pool:
                 if haversine(anchor['lat'], anchor['lon'], t['lat'], t['lon']) <= 50.0:
                     group.append(t); unique_locs.add(t['full_addr'])
-                else: rem.append(t)
+                else:
+                    rem.append(t)
             pool = rem
-            clusters.append({"data": group, "center": [anchor['lat'], anchor['lon']], "unique_count": len(unique_locs)})
+            clusters.append({
+                "data": group, 
+                "center": [anchor['lat'], anchor['lon']], 
+                "unique_count": len(unique_locs),
+                "city": anchor['city'],
+                "state": anchor['state']
+            })
         
         st.session_state[f"clusters_{pod_name}"] = clusters
-        p_bar.progress(1.0, text="✅ Route Intelligence Ready")
+        p_bar.progress(1.0, text="✅ Routes Clustered")
         time.sleep(0.5)
     ui_container.empty()
 
-# --- RENDER LOGIC ---
+# --- UI RENDER FUNCTIONS ---
 def render_dispatch_logic(i, cluster, pod_name):
     cluster_hash = hashlib.md5("".join(sorted([t['id'] for t in cluster['data']])).encode()).hexdigest()
     sync_key = f"sync_{cluster_hash}"
@@ -232,7 +243,7 @@ def render_dispatch_logic(i, cluster, pod_name):
         else: st.markdown('<div style="background:#e2e8f0;color:#94a3b8;padding:10px;text-align:center;border-radius:4px;font-weight:bold;">📧 Sync First</div>', unsafe_allow_html=True)
 
 def run_pod_tab(pod_name):
-    st.markdown(f"<h2 style='font-family: Roboto !important;'>{pod_name} Command Center</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='font-family: Roboto !important;'>{pod_name} </h2>", unsafe_allow_html=True)
     if f"clusters_{pod_name}" not in st.session_state:
         if st.button(f"📥 Initialize {pod_name}", key=f"init_{pod_name}"): process_pod_data(pod_name); st.rerun()
         return
@@ -243,15 +254,13 @@ def run_pod_tab(pod_name):
     
     acc, unacc = [], []
     for c in clusters:
-        # Check IC range
         has_ic = False
         if not v_ics.empty:
             has_ic = v_ics.apply(lambda x: haversine(c['center'][0], c['center'][1], x['Lat'], x['Lng']), axis=1).le(MAX_DEADHEAD_MILES).any()
         
-        # EFFICIENCY LOGIC: $25/hr check
-        # Simulation using cluster center
+        # 🎯 EFFICIENCY LOGIC: $25/hr check
         mi, hrs, _ = fetch_gmaps_directions(f"{c['center'][0]},{c['center'][1]}", tuple([d['full_addr'] for d in c['data'][:5]]))
-        pay = c['unique_count'] * 18.0 # Baseline for sorting
+        pay = c['unique_count'] * 18.0 
         efficiency_ok = (pay / hrs) >= HOURLY_FLOOR_RATE if hrs > 0 else True
 
         if has_ic and efficiency_ok: acc.append(c)
@@ -271,14 +280,14 @@ def run_pod_tab(pod_name):
     t1, t2 = st.tabs(["🟢 Ready", "🔴 Review"])
     with t1:
         for i, c in enumerate(acc):
-            with st.expander(f"📍 {c['data'][0]['city']} | {c['unique_count']} Stops"): render_dispatch_logic(i, c, pod_name)
+            with st.expander(f"📍 {c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i, c, pod_name)
     with t2:
         for i, c in enumerate(unacc):
-            with st.expander(f"🔴 Review Required | {c['data'][0]['city']} | {c['unique_count']} Stops"): render_dispatch_logic(i+1000, c, pod_name)
+            with st.expander(f"🔴 Review Required | {c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i+1000, c, pod_name)
 
 # --- LAYOUT ---
 if "ic_df" not in st.session_state: st.session_state.ic_df = load_ic_database(IC_SHEET_URL)
-st.markdown("<h1 style='font-family: Roboto !important;'>Network Command Center</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='font-family: Roboto !important;'>Dispatch Command Center </h1>", unsafe_allow_html=True)
 tabs = st.tabs(["🌎 Global Overview", "🔵 Blue Pod", "🟢 Green Pod", "🟠 Orange Pod", "🟣 Purple Pod", "🔴 Red Pod"])
 with tabs[1]: run_pod_tab("Blue Pod")
 with tabs[2]: run_pod_tab("Green Pod")
