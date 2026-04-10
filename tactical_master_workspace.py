@@ -16,7 +16,7 @@ PORTAL_BASE_URL = "https://nwilliams-maker.github.io/Route-Authorization-Portal/
 GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbynAIziubArSQ0hVGTvJMpk11a9yLP0kNcSmGpcY7GDNRT25Po5p92K3EDslx9VycKC/exec"
 IC_SHEET_URL = "https://docs.google.com/spreadsheets/d/1y6wX0x93iDc3gdK_nZKLD-2QcGkUHkcM75u90ffRO6k/edit#gid=0"
 
-# GID for the "Saved_Routes" tab - update this if your sheet GID is different
+# UPDATED: GID for the "Saved_Routes" tab
 SAVED_ROUTES_GID = "1477617688" 
 
 MAX_DEADHEAD_MILES = 60
@@ -85,7 +85,6 @@ def load_sent_records_from_sheet(sheet_url):
         export_url = f"{sheet_url.split('/edit')[0]}/export?format=csv&gid={SAVED_ROUTES_GID}"
         df = pd.read_csv(export_url)
         sent_tasks = set()
-        # Look for the taskIds column and split by comma
         for ids in df['taskIds'].dropna():
             sent_tasks.update(str(ids).split(','))
         return sent_tasks
@@ -270,7 +269,6 @@ def run_pod_tab(pod_name):
     ready, review, sent = [], [], []
     
     for c in clusters:
-        # Cross-reference with Saved_Routes taskIds
         cluster_task_ids = [t['id'] for t in c['data']]
         already_sent_in_sheet = any(tid in sent_db for tid in cluster_task_ids)
         
@@ -292,7 +290,7 @@ def run_pod_tab(pod_name):
     c3.markdown(f"<div class='metric-box'><div class='metric-title' style='color:{TB_BLUE}'>Sent</div><div class='metric-value'>{len(sent)}</div></div>", unsafe_allow_html=True)
     c4.markdown(f"<div class='metric-box'><div class='metric-title' style='color:#f44336'>Review</div><div class='metric-value'>{len(review)}</div></div>", unsafe_allow_html=True)
     if c5.button("🔄 Refresh", key=f"ref_{pod_name}"): 
-        st.session_state.sent_db = load_sent_records_from_sheet(IC_SHEET_URL) # Update sent cache on refresh
+        st.session_state.sent_db = load_sent_records_from_sheet(IC_SHEET_URL)
         process_pod_data(pod_name)
         st.rerun()
 
