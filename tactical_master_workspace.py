@@ -55,7 +55,7 @@ headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()
 
 st.set_page_config(page_title="Network Command Center", layout="wide")
 
-# --- UI STYLING (Lighter Fields + Cool Gray BG) ---
+# --- UI STYLING (Fixed Hover Effects + Light Fields) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
@@ -68,7 +68,7 @@ st.markdown(f"""
     
     h1, h2, h3 {{ color: {TB_PURPLE} !important; font-weight: 800 !important; }}
     
-    /* Expander styling */
+    /* Expander cards */
     div[data-testid="stExpander"] {{ 
         border: 1px solid #94a3b8 !important; 
         border-radius: 12px !important; 
@@ -80,10 +80,9 @@ st.markdown(f"""
     div[data-testid="stExpander"] details summary p {{ 
         color: #000000 !important; 
         font-weight: 800 !important; 
-        font-size: 16px !important; 
     }}
 
-    /* Lightening the Input Fields (Contractor Select, Date, Numbers) */
+    /* FIXED INPUT FIELDS: Light background, NO dark hover fill */
     div[data-baseweb="select"] > div, 
     div[data-testid="stNumberInput"] input, 
     div[data-testid="stDateInput"] input {{
@@ -91,6 +90,14 @@ st.markdown(f"""
         color: #000000 !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
+    }}
+    
+    /* Disabling the default dark hover fill in Streamlit/BaseWeb */
+    div[data-baseweb="select"] > div:hover,
+    div[data-testid="stNumberInput"] input:hover,
+    div[data-testid="stDateInput"] input:hover {{
+        background-color: #f1f5f9 !important; /* Extremely light shift instead of dark */
+        border-color: {TB_BLUE} !important;
     }}
     
     /* Prompt Box (TextArea) in Light Blue */
@@ -118,9 +125,7 @@ st.markdown(f"""
         color: #FFFFFF !important; 
         font-weight: 700 !important; 
         border-radius: 8px !important; 
-        border: none !important;
     }}
-    .stButton>button:hover {{ background-color: {TB_GREEN} !important; color: #000000 !important; }}
     
     .stTabs [data-baseweb="tab"] {{ color: #000000 !important; font-weight: 700 !important; }}
     div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 800 !important; }}
@@ -345,9 +350,9 @@ def run_pod_tab(pod_name):
         else: review.append(c)
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.markdown(f"<div class='metric-box'><div class='metric-title'>Total</div><div class='metric-value'>{len(clusters)}</div></div>", unsafe_allow_html=True)
-    c2.markdown(f"<div class='metric-box'><div class='metric-title'>Ready</div><div class='metric-value'>{len(ready)}</div></div>", unsafe_allow_html=True)
-    c3.markdown(f"<div class='metric-box'><div class='metric-title'>Sent</div><div class='metric-value'>{len(sent)}</div></div>", unsafe_allow_html=True)
-    c4.markdown(f"<div class='metric-box'><div class='metric-title'>Review</div><div class='metric-value'>{len(review)}</div></div>", unsafe_allow_html=True)
+    c2.markdown(f"<div class='metric-box'><div class='metric-title' style='color:#000000'>Ready</div><div class='metric-value'>{len(ready)}</div></div>", unsafe_allow_html=True)
+    c3.markdown(f"<div class='metric-box'><div class='metric-title' style='color:#000000'>Sent</div><div class='metric-value'>{len(sent)}</div></div>", unsafe_allow_html=True)
+    c4.markdown(f"<div class='metric-box'><div class='metric-title' style='color:#000000'>Review</div><div class='metric-value'>{len(review)}</div></div>", unsafe_allow_html=True)
     if c5.button("🔄 Refresh", key=f"ref_{pod_name}"): 
         st.session_state.sent_db = load_sent_records_from_sheet(IC_SHEET_URL)
         process_pod_data(pod_name)
