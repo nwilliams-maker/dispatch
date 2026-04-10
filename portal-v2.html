@@ -140,53 +140,56 @@
         };
 
         async function submitFinalResponse() {
-            const decision = document.querySelector('input[name="ic_decision"]:checked').value;
-            const sig = document.getElementById('typed_sig').value;
-            const consent = document.getElementById('legal_consent').checked;
-            const counter = document.getElementById('ic_counter_val').value;
-            const notes = document.getElementById('ic_notes').value;
+    const decision = document.querySelector('input[name="ic_decision"]:checked').value;
+    const sig = document.getElementById('typed_sig').value;
+    const consent = document.getElementById('legal_consent').checked;
+    const counter = document.getElementById('ic_counter_val').value;
+    const notes = document.getElementById('ic_notes').value;
 
-            if (decision === 'Accepted' && (!sig || !consent)) return alert("Signature and consent required.");
-            
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true; 
-            btn.innerHTML = "Saving Response...";
+    if (decision === 'Accepted' && (!sig || !consent)) return alert("Signature and consent required.");
+    
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; 
+    btn.innerHTML = "Saving Response...";
 
-            try {
-                const gasPayload = {
-                    action: "authorizeRoute",
-                    routeId: window.currentRouteId,
-                    decision: decision,
-                    signature: sig,
-                    notes: notes
-                };
+    try {
+        // --- CRITICAL FIX: Update action to "processDecision" and pass phone/taskIds ---
+        const gasPayload = {
+            action: "processDecision", 
+            routeId: window.currentRouteId,
+            decision: decision,
+            signature: sig,
+            notes: notes,
+            phone: window.payloadData.phone || "",       // Pass phone for Onfleet worker lookup
+            taskIds: window.payloadData.taskIds || ""    // Pass taskIds for Onfleet assignment
+        };
 
-                await fetch(webAppUrl, {
-                    method: 'POST',
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(gasPayload)
-                });
+        await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(gasPayload)
+        });
 
-                await fetch(formspreeUrl, {
-                    method: 'POST',
-                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        _subject: `${decision}: WO #${window.payloadData.wo} (${window.payloadData.icn})`,
-                        Decision: decision,
-                        Contractor: window.payloadData.icn,
-                        "Work Order": window.payloadData.wo,
-                        Signature: sig
-                    })
-                });
+        await fetch(formspreeUrl, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                _subject: `${decision}: WO #${window.payloadData.wo} (${window.payloadData.icn})`,
+                Decision: decision,
+                Contractor: window.payloadData.icn,
+                "Work Order": window.payloadData.wo,
+                Signature: sig
+            })
+        });
 
-                document.getElementById('icMode').classList.add('hidden');
-                document.getElementById('successView').classList.remove('hidden');
+        document.getElementById('icMode').classList.add('hidden');
+        document.getElementById('successView').classList.remove('hidden');
 
-            } catch (e) {
-                alert("Submission failed. Please try again.");
-                btn.disabled = false; btn.innerText = "Submit Final Response";
-            }
-        }
+    } catch (e) {
+        alert("Submission failed. Please try again.");
+        btn.disabled = false; btn.innerText = "Submit Final Response";
+    }
+}
 
         function buildMapsUrl(limit) {
             if (!window.payloadData || !window.payloadData.locs) return null;
