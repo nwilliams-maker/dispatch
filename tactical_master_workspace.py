@@ -76,7 +76,6 @@ st.markdown(f"""
     
     div[data-baseweb="select"] > div, div[data-testid="stNumberInput"] input, div[data-testid="stDateInput"] input {{ background-color: #ffffff !important; color: #000000 !important; border: 1.5px solid #cbd5e1 !important; }}
     
-    /* Terraboost Purple Primary Buttons */
     .stButton>button {{ background-color: {TB_PURPLE} !important; color: #FFFFFF !important; font-weight: 800 !important; border-radius: 12px !important; width: 100%; border: none !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s ease; }}
     .stButton>button:hover {{ transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); }}
     
@@ -102,18 +101,37 @@ def fetch_sent_records_from_sheet():
     try:
         url = f"{IC_SHEET_URL.split('/edit')[0]}/export?format=csv&gid={SAVED_ROUTES_GID}"
         df = pd.read_csv(url)
+        # CRITICAL FIX: Normalize column headers to lowercase and strip whitespace
+        df.columns = [str(c).strip().lower() for c in df.columns]
+        
         sent_dict = {}
-        for payload_str in df.get('json payload', pd.Series()).dropna():
-            try:
-                p = json.loads(payload_str)
-                tids = p.get('taskIds', '')
-                contractor_name = p.get('icn', 'Unknown Contractor')
-                if tids:
-                    for tid in str(tids).replace('|', ',').split(','):
-                        sent_dict[tid.strip()] = contractor_name
-            except: continue
+        
+        # Primary check: JSON Payload column
+        if 'json payload' in df.columns:
+            for payload_str in df['json payload'].dropna():
+                try:
+                    p = json.loads(payload_str)
+                    tids = p.get('taskIds', '')
+                    contractor_name = p.get('icn', 'Unknown Contractor')
+                    if tids:
+                        for tid in str(tids).replace('|', ',').split(','):
+                            if tid.strip():
+                                sent_dict[tid.strip()] = contractor_name
+                except: continue
+        
+        # Fallback check: Direct taskIds column if JSON parsing fails or isn't found
+        if 'taskids' in df.columns and not sent_dict:
+            for idx, row in df.iterrows():
+                tids = str(row.get('taskids', '')).replace('|', ',').split(',')
+                c_name = row.get('contractor', row.get('icn', 'Unknown Contractor'))
+                for tid in tids:
+                    if tid.strip() and tid.strip() not in sent_dict:
+                        sent_dict[tid.strip()] = c_name
+                        
         return sent_dict
-    except: return {}
+    except Exception as e:
+        st.error(f"Failed to fetch sent routes. Google Sheets Error: {e}")
+        return {}
 
 @st.cache_data(show_spinner=False)
 def get_gmaps(home, waypoints):
@@ -161,7 +179,6 @@ def process_pod(pod_name):
         clusters = []
         total_pool = len(pool)
         
-        # Pre-load IC Data to check for nearby contractors during clustering
         ic_df = st.session_state.get('ic_df', pd.DataFrame())
         v_ics_base = pd.DataFrame()
         if not ic_df.empty:
@@ -197,7 +214,6 @@ def process_pod(pod_name):
             gate_avg, u_count = check_viability(group)
             status = "Ready"
             
-            # Pruning Logic
             if gate_avg > 23.0 and len(group) > 1:
                 removed_stops = []
                 passed = False
@@ -217,14 +233,12 @@ def process_pod(pod_name):
             elif gate_avg > 23.0:
                 status = "Flagged"
             
-            # 60-MILE CONTRACTOR CHECK
             has_ic = False
             if not v_ics_base.empty:
                 dists = v_ics_base.apply(lambda x: haversine(anc['lat'], anc['lon'], x['Lat'], x['Lng']), axis=1)
                 if (dists <= 60).any():
                     has_ic = True
             
-            # If no contractor is nearby, push straight to Flagged regardless of financials
             if not has_ic:
                 status = "Flagged"
             
@@ -257,7 +271,6 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
     for addr, count in loc_sum.items(): st.markdown(f"**{addr}** ({count} Tasks)")
     st.divider()
 
-    # Contractor logic
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy()
     
@@ -265,7 +278,6 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
         v_ics['d'] = v_ics.apply(lambda x: haversine(cluster['center'][0], cluster['center'][1], x['Lat'], x['Lng']), axis=1)
         v_ics = v_ics[v_ics['d'] <= 60].sort_values('d').head(5)
 
-    # If Flagged because of NO CONTRACTOR, display warning and stop render block
     if v_ics.empty:
         st.error("⚠️ No contractors found within 60 miles. Manual recruiting or assignment required.")
         return
