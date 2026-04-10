@@ -240,24 +240,34 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     col1, col2 = st.columns(2)
     with col1:
         if not real_gas_id:
-            if st.button("☁️ Sync Work Order", key=f"sync_btn_{i}_{pod_name}"):
-                payload = {
-                    "icn": sel_ic['Name'],
-                    "ice": sel_ic['Email'],
-                    "wo": wo_title,
-                    "due": due.strftime('%Y-%m-%d'),
-                    "comp": pay,
-                    "lCnt": stop_count,
-                    "tCnt": len(cluster['data']),
-                    "mi": mi,
-                    "time": t_str,
-                    "locs": " | ".join(list(loc_sum.keys())),
-                    "taskIds": ",".join(cluster_task_ids)
-                }
-                res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
-                if res.get("success"):
-                    st.session_state[sync_key] = res.get("routeId")
-                    st.rerun()
+            # --- UPDATE THIS BLOCK IN tactical_master_workspace.py ---
+    if st.button("☁️ Sync Work Order", key=f"sync_btn_{i}_{pod_name}"):
+        # Define the route stops including the contractor home at start and end
+        # This ensures the Google Sheet 'locs' field is a perfect round trip
+        contractor_home = sel_ic['Location']
+        route_stops = list(loc_sum.keys())
+        full_round_trip_locs = [contractor_home] + route_stops + [contractor_home]
+        
+        payload = {
+            "icn": sel_ic['Name'],
+            "ice": sel_ic['Email'],
+            "wo": wo_title,
+            "due": due.strftime('%Y-%m-%d'),
+            "comp": pay,
+            "lCnt": stop_count,
+            "tCnt": len(cluster['data']),
+            "mi": mi,    # Already calculated as round-trip in fetch_gmaps_directions
+            "time": t_str, # Already calculated as round-trip in fetch_gmaps_directions
+            "locs": " | ".join(full_round_trip_locs), # INJECTED: Full Loop for the Portal
+            "taskIds": ",".join(cluster_task_ids),
+            "phone": str(sel_ic['Phone']),
+            "jobOnly": " | ".join([f"{a} ({loc_sum[a]} Tasks)" for a in loc_sum])
+        }
+        
+        res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
+        if res.get("success"):
+            st.session_state[sync_key] = res.get("routeId")
+            st.rerun()
         else:
             st.button("✅ Data Synced", disabled=True, key=f"synced_{i}_{pod_name}")
 
