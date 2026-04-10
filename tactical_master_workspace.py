@@ -73,12 +73,14 @@ st.markdown(f"""
 
     /* Expanders & Inputs */
     div[data-testid="stExpander"] {{ border: none !important; border-radius: 15px !important; background: #fff !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 20px; }}
-    div[data-testid="stExpander"] details summary p {{ color: #000 !important; font-weight: 800 !important; }}
+    div[data-testid="stExpander"] details summary p {{ color: #000 !important; font-weight: 800 !important; font-size: 16px !important; }}
     div[data-baseweb="select"] > div, div[data-testid="stNumberInput"] input, div[data-testid="stDateInput"] input {{
         background-color: #ffffff !important; color: #000000 !important; border: 1.5px solid #cbd5e1 !important; border-radius: 8px !important;
     }}
     .stButton>button {{ background-color: {TB_PURPLE} !important; color: #FFFFFF !important; font-weight: 700 !important; border-radius: 12px !important; width: 100%; }}
-    .gmail-btn {{ text-align: center; background-color: {TB_GREEN} !important; color: white !important; padding: 12px; border-radius: 12px; font-weight: 800; display: block; text-decoration: none; }}
+    .gmail-btn {{ text-align: center; background-color: {TB_GREEN} !important; color: white !important; padding: 12px; border-radius: 12px; font-weight: 800; display: block; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+    
+    div[data-testid="stMetricValue"] > div {{ color: #000000 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -94,7 +96,7 @@ def normalize_state(st_str):
     clean = str(st_str).strip().upper()
     return STATE_MAP.get(clean, clean)
 
-# Removed caching here to guarantee fresh data on manual "Sync" clicks
+# Dedicated manual fetch function without caching to ensure real-time pull for Sent routes
 def fetch_sent_records_from_sheet():
     try:
         url = f"{IC_SHEET_URL.split('/edit')[0]}/export?format=csv&gid={SAVED_ROUTES_GID}"
@@ -134,7 +136,7 @@ def load_ic_database(sheet_url):
 # --- CORE LOGIC ---
 def process_pod(pod_name):
     config = POD_CONFIGS[pod_name]
-    progress_bar = st.progress(0, text=f"📥 Connecting to Onfleet for {pod_name} Pod data...")
+    progress_bar = st.progress(0, text=f"📥 Extracting {pod_name} Pod task data...")
     
     try:
         all_tasks = []
@@ -203,7 +205,6 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
     
     col_a, col_b, col_c = st.columns([2,1,1])
     
-    # Pre-select the contractor if this is in the Sent tab and we mapped it
     default_idx = 0
     if is_sent and 'contractor_name' in cluster:
         for idx, key in enumerate(ic_opts.keys()):
@@ -236,9 +237,9 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
                 home = ic['Location']
                 payload = {
                     "icn": ic['Name'], "ice": ic['Email'], "wo": f"{ic['Name']}-{i}", 
-                    "due": str(due), "comp": pay, "lCnt": cluster['stops'], "mi": mi, "time": t_str, 
+                    "due": str(due), "comp": pay, "lCnt": cluster['stops'], "mi": mi, "time": t_str, "phone": str(ic['Phone']),
                     "locs": " | ".join([home] + list(loc_sum.keys()) + [home]),
-                    "taskIds": ",".join(task_ids), "phone": str(ic['Phone']),
+                    "taskIds": ",".join(task_ids),
                     "jobOnly": " | ".join([f"{a} ({c} Tasks)" for a,c in loc_sum.items()])
                 }
                 res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
@@ -253,7 +254,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
             st.markdown(f'<a href="{gmail_url}" target="_blank" class="gmail-btn">🚀 OPEN IN GMAIL</a>', unsafe_allow_html=True)
 
 def run_pod_tab(pod_name):
-    st.markdown(f"<h2 style='text-align:center;'>{pod_name} Pod</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align:center;'>{pod_name} Dashboard</h2>", unsafe_allow_html=True)
     if f"clusters_{pod_name}" not in st.session_state:
         if st.button(f"🚀 Initialize {pod_name} Data", key=f"init_{pod_name}"):
             process_pod(pod_name)
@@ -267,25 +268,24 @@ def run_pod_tab(pod_name):
             process_pod(pod_name); st.rerun()
         return
     
-    # Check Sent DB
+    # Analyze routing vs Sent DB logic
     sent_db = st.session_state.get("sent_db", {})
     ready, review, sent = [], [], []
     
     for c in cls:
         task_ids = [str(t['id']).strip() for t in c['data']]
-        # Check if any task in this cluster is inside our Sent dictionary
         matched_contractors = [sent_db[tid] for tid in task_ids if tid in sent_db]
         
         if matched_contractors:
-            c['contractor_name'] = matched_contractors[0] # Attach Contractor Name
+            c['contractor_name'] = matched_contractors[0]
             sent.append(c)
         else:
-            hrs = fetch_gmaps_directions(f"{c['center'][0]},{c['center'][1]}", tuple([d['full_addr'] for d in c['data'][:10]]))[1]
+            hrs = get_gmaps(f"{c['center'][0]},{c['center'][1]}", [d['full'] for d in c['data'][:10]])[1]
             gate_avg = (hrs * 25.0) / c['stops'] if c['stops'] > 0 else 0
             if gate_avg <= 23.0: ready.append(c)
             else: review.append(c)
     
-    # 3 ITEMS OVERVIEW: Unified standard styling (No pod colors here)
+    # 3 ITEMS OVERVIEW: Standard styling for all pods
     c1, c2, c3, c4 = st.columns([1,1,1, 1.2])
     for col, title, val in zip([c1, c2, c3], ["Ready", "Sent", "Flagged"], [len(ready), len(sent), len(review)]):
         col.markdown(f"""
@@ -295,11 +295,10 @@ def run_pod_tab(pod_name):
             </div>
         """, unsafe_allow_html=True)
     
-    # The dedicated Sync button to pull from Google Sheets
     with c4:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄 Sync Sent Routes", use_container_width=True, key=f"sync_sheet_{pod_name}"):
-            bar = st.progress(0, text="🔄 Querying Google Sheets...")
+            bar = st.progress(0, text="🔄 Fetching database records...")
             st.session_state.sent_db = fetch_sent_records_from_sheet()
             bar.progress(100, text="✅ Database Synced!")
             time.sleep(0.5)
@@ -312,23 +311,22 @@ def run_pod_tab(pod_name):
     for c in review: folium.CircleMarker(c['center'], radius=10, color="#ef4444", fill=True, opacity=0.8).add_to(m)
     st_folium(m, width=1100, height=400, key=f"map_{pod_name}")
     
-    t1, t2, t3 = st.tabs(["Dispatch Ready", "Sent", "Flagged"])
-    with t1:
+    t_ready, t_out, t_rev = st.tabs(["Dispatch Ready", "Sent", "Flagged"])
+    with t_ready:
         for i, c in enumerate(ready):
             with st.expander(f"📍 {c['city']}, {c['state']} | {c['stops']} Stops"): 
                 render_dispatch(i, c, pod_name)
-    with t2:
+    with t_out:
         for i, c in enumerate(sent):
-            # Explicitly display Contractor Name for Sent items
-            contractor_name = c.get('contractor_name', 'Unknown')
-            with st.expander(f"✓ {contractor_name} | {c['city']}, {c['state']} | {c['stops']} Stops"): 
+            ic_name = c.get('contractor_name', 'Unknown')
+            with st.expander(f"✓ {ic_name} | {c['city']}, {c['state']} | {c['stops']} Stops"): 
                 render_dispatch(i+500, c, pod_name, is_sent=True)
-    with t3:
+    with t_rev:
         for i, c in enumerate(review):
             with st.expander(f"🔴 {c['city']}, {c['state']} | {c['stops']} Stops"): 
                 render_dispatch(i+1000, c, pod_name)
 
-# --- APP START ---
+# --- START ---
 if "ic_df" not in st.session_state:
     try:
         url = f"{IC_SHEET_URL.split('/edit')[0]}/export?format=csv&gid=0"
@@ -339,7 +337,7 @@ st.markdown("<h1>Terraboost Tactical Command</h1>", unsafe_allow_html=True)
 tabs = st.tabs(["Global", "Blue", "Green", "Orange", "Purple", "Red"])
 
 with tabs[0]:
-    st.markdown("<h2 style='text-align:center;'>Global Initialization</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center;'>Global Control</h2>", unsafe_allow_html=True)
     c_btn = st.columns([1,2,1])[1]
     if c_btn.button("🚀 Initialize All Pods", use_container_width=True):
         st.session_state.sent_db = fetch_sent_records_from_sheet()
