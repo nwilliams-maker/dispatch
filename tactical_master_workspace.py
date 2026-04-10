@@ -55,12 +55,11 @@ headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()
 
 st.set_page_config(page_title="Network Command Center", layout="wide")
 
-# --- UI STYLING (Gray BG + Pure White Cards + Black Text) ---
+# --- UI STYLING (Lighter Fields + Cool Gray BG) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
     
-    /* Main Background: Light-Medium Cool Gray */
     .stApp {{ 
         background-color: #cbd5e1 !important; 
         color: #000000 !important; 
@@ -69,7 +68,7 @@ st.markdown(f"""
     
     h1, h2, h3 {{ color: {TB_PURPLE} !important; font-weight: 800 !important; }}
     
-    /* Expander styling - Clean White Cards */
+    /* Expander styling */
     div[data-testid="stExpander"] {{ 
         border: 1px solid #94a3b8 !important; 
         border-radius: 12px !important; 
@@ -78,21 +77,23 @@ st.markdown(f"""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }}
     
-    /* Dark Header for Expanders (No light blue bg) */
-    div[data-testid="stExpander"] details summary {{ 
-        background-color: #FFFFFF !important; 
-        padding: 12px !important; 
-        border-radius: 12px !important; 
-    }}
-    
-    /* Deep Black text for card titles */
     div[data-testid="stExpander"] details summary p {{ 
         color: #000000 !important; 
         font-weight: 800 !important; 
         font-size: 16px !important; 
     }}
+
+    /* Lightening the Input Fields (Contractor Select, Date, Numbers) */
+    div[data-baseweb="select"] > div, 
+    div[data-testid="stNumberInput"] input, 
+    div[data-testid="stDateInput"] input {{
+        background-color: #f8fafc !important;
+        color: #000000 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+    }}
     
-    /* Specific Prompt Box (TextArea) in Light Blue */
+    /* Prompt Box (TextArea) in Light Blue */
     div[data-testid="stTextArea"] textarea {{
         background-color: {TB_LIGHT_BLUE} !important;
         color: #000000 !important;
@@ -228,7 +229,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     loc_sum = {}
     for c in cluster['data']:
         addr = c['full_addr']; loc_sum[addr] = loc_sum.get(addr, 0) + 1
-    for addr, count in loc_sum.items(): st.markdown(f"• **{addr}** ({count} Tasks)")
+    for addr, count in loc_sum.items(): st.markdown(f"<span style='color:black;'>• **{addr}** ({count} Tasks)</span>", unsafe_allow_html=True)
     st.divider()
 
     if is_sent:
