@@ -21,11 +21,8 @@ SAVED_ROUTES_GID = "1477617688"
 # Terraboost Media Brand Palette
 TB_PURPLE = "#633094"
 TB_GREEN = "#76bc21"
-TB_NEW_FILL = "#cbd5e1"
 TB_APP_BG = "#f1f5f9"    
-TB_OFF_WHITE = "#f8fafc"
-TB_LIGHT_BLUE = "#f0f7ff"
-TB_HOVER_GRAY = "#e2e8f0" # The slightly darker lightgray for hovers
+TB_HOVER_GRAY = "#e2e8f0" 
 
 POD_CONFIGS = {
     "Blue": {"states": {"AL", "AR", "FL", "IL", "IA", "LA", "MI", "MN", "MS", "MO", "NC", "SC", "WI"}},
@@ -71,9 +68,10 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"]:nth-of-type(4) {{ background-color: #ffedd5 !important; color: #000000 !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(5) {{ background-color: #f3e8ff !important; color: #000000 !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(6) {{ background-color: #fee2e2 !important; color: #000000 !important; }}
-    .stTabs [aria-selected="true"] {{ transform: scale(1.05); border: 2px solid {TB_NEW_FILL} !important; }}
+    .stTabs [aria-selected="true"] {{ transform: scale(1.05); border: 2px solid {TB_PURPLE} !important; }}
 
-    div[data-testid="stExpander"] {{ border: 1px solid #94a3b8 !important; border-radius: 15px !important; background: #fff !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); margin-bottom: 20px; }}
+    /* Expander Cards - Pure White */
+    div[data-testid="stExpander"] {{ border: 1px solid #cbd5e1 !important; border-radius: 15px !important; background: #ffffff !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); margin-bottom: 20px; }}
     div[data-testid="stExpander"] details summary p {{ color: #000000 !important; font-weight: 800 !important; }}
     
     /* Input Fields Base */
@@ -91,11 +89,12 @@ st.markdown(f"""
         color: #000000 !important;
     }}
     
-    .stButton>button {{ background-color: {TB_NEW_FILL} !important; color: #000000 !important; font-weight: 800 !important; border-radius: 12px !important; width: 100%; border: 1px solid #94a3b8 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s ease; }}
-    .stButton>button:hover {{ background-color: {TB_HOVER_GRAY} !important; transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); }}
+    /* Terraboost Action Buttons */
+    .stButton>button {{ background-color: {TB_PURPLE} !important; color: #ffffff !important; font-weight: 800 !important; border-radius: 12px !important; width: 100%; border: none !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s ease; }}
+    .stButton>button:hover {{ filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); color: #ffffff !important; }}
     
-    .gmail-btn {{ text-align: center; background-color: {TB_NEW_FILL} !important; color: #000000 !important; padding: 12px; border-radius: 12px; font-weight: 800; display: block; text-decoration: none; border: 1px solid #94a3b8 !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s ease; }}
-    .gmail-btn:hover {{ background-color: {TB_HOVER_GRAY} !important; transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); }}
+    .gmail-btn {{ text-align: center; background-color: {TB_GREEN} !important; color: #ffffff !important; padding: 12px; border-radius: 12px; font-weight: 800; display: block; text-decoration: none; border: none !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s ease; }}
+    .gmail-btn:hover {{ filter: brightness(1.05); transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); color: #ffffff !important; }}
     
     div[data-testid="stMetricValue"] > div {{ color: #000000 !important; }}
     </style>
@@ -314,8 +313,8 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
     eff_stop = round(pay / cluster['stops'], 2) if cluster['stops'] > 0 else 0
 
     m1, m2 = st.columns(2)
-    with m1: st.markdown(f"<div style='background:{TB_OFF_WHITE}; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{TB_GREEN if eff_stop <= 23.00 else '#ef4444'};'>Total: ${pay:,.2f}</p><p style='margin:0; font-size:13px; color:#000000;'>Effective: ${eff_stop}/stop</p></div>", unsafe_allow_html=True)
-    with m2: st.markdown(f"<div style='background:{TB_OFF_WHITE}; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Logistics</p><p style='margin:0; font-size:24px; font-weight:800; color:#000000;'>{t_str}</p><p style='margin:0; font-size:13px; color:#000000;'>Round Trip: {mi} mi</p></div>", unsafe_allow_html=True)
+    with m1: st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{TB_GREEN if eff_stop <= 23.00 else '#ef4444'};'>Total: ${pay:,.2f}</p><p style='margin:0; font-size:13px; color:#000000;'>Effective: ${eff_stop}/stop</p></div>", unsafe_allow_html=True)
+    with m2: st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Logistics</p><p style='margin:0; font-size:24px; font-weight:800; color:#000000;'>{t_str}</p><p style='margin:0; font-size:13px; color:#000000;'>Round Trip: {mi} mi</p></div>", unsafe_allow_html=True)
 
     sig = (f"Work Order: {ic['Name']} - {datetime.now().strftime('%m%d%Y')}\nContractor: {ic['Name']}\nDue Date: {due.strftime('%A, %b %d, %Y')}\n\n"
            f"Metrics:\n- Stops: {cluster['stops']}\n- Mileage: {mi} mi\n- Time: {t_str}\n- Compensation: ${pay:.2f}\n\n"
@@ -377,7 +376,7 @@ def run_pod_tab(pod_name):
     c1, c2, c3, c4 = st.columns([1,1,1, 1.2])
     for col, title, val in zip([c1, c2, c3], ["Ready", "Sent", "Flagged"], [len(ready), len(sent), len(review)]):
         col.markdown(f"""
-            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:15px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
+            <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
                 <p style='margin:0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>{title}</p>
                 <p style='margin:0; font-size:26px; font-weight:800; color:#000000;'>{val}</p>
             </div>
