@@ -25,6 +25,7 @@ TB_GRAY_BG = "#cbd5e1"
 TB_OFF_WHITE = "#f8fafc"
 TB_LIGHT_BLUE = "#f0f7ff"
 
+# Pod Configuration
 POD_CONFIGS = {
     "Blue": {"states": {"AL", "AR", "FL", "IL", "IA", "LA", "MI", "MN", "MS", "MO", "NC", "SC", "WI"}, "bg": "#dbeafe", "text": "#1e3a8a"},
     "Green": {"states": {"CO", "DC", "GA", "IN", "KY", "MD", "NJ", "OH", "UT"}, "bg": "#dcfce7", "text": "#064e3b"},
@@ -49,7 +50,7 @@ STATE_MAP = {
 
 headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()).decode()}"}
 
-st.set_page_config(page_title="Terraboost Tactical Command", layout="wide")
+st.set_page_config(page_title="Tactical Command", layout="wide")
 
 # --- UI STYLING ---
 st.markdown(f"""
@@ -62,26 +63,21 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.4); padding: 10px; border-radius: 15px; }}
     .stTabs [data-baseweb="tab"] {{ border-radius: 10px !important; padding: 10px 20px !important; font-weight: 700 !important; }}
     
-    /* Tab Colors and Selected State */
+    /* Tab Colors */
     .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ background-color: #ffffff !important; color: {TB_PURPLE} !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(2) {{ background-color: #dbeafe !important; color: #1e3a8a !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(3) {{ background-color: #dcfce7 !important; color: #064e3b !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(4) {{ background-color: #ffedd5 !important; color: #7c2d12 !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(5) {{ background-color: #f3e8ff !important; color: #581c87 !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(6) {{ background-color: #fee2e2 !important; color: #7f1d1d !important; }}
-    .stTabs [aria-selected="true"] {{ transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; border: 2px solid {TB_PURPLE} !important; }}
+    .stTabs [aria-selected="true"] {{ transform: scale(1.05); border: 2px solid {TB_PURPLE} !important; }}
 
-    /* Cards & Inputs - Ensuring Legibility */
+    /* Standard Elements */
     div[data-testid="stExpander"] {{ border: none !important; border-radius: 15px !important; background: #fff !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 20px; }}
     div[data-testid="stExpander"] details summary p {{ color: #000 !important; font-weight: 800 !important; }}
-    div[data-baseweb="select"] > div, div[data-testid="stNumberInput"] input, div[data-testid="stDateInput"] input {{
-        background-color: #ffffff !important; color: #000000 !important; border: 1.5px solid #cbd5e1 !important;
-    }}
+    div[data-baseweb="select"] > div, div[data-testid="stNumberInput"] input, div[data-testid="stDateInput"] input {{ background-color: #ffffff !important; color: #000000 !important; border: 1.5px solid #cbd5e1 !important; }}
     .stButton>button {{ background-color: {TB_PURPLE} !important; color: #FFFFFF !important; font-weight: 700 !important; border-radius: 12px !important; width: 100%; }}
     .gmail-btn {{ text-align: center; background-color: {TB_GREEN} !important; color: white !important; padding: 12px; border-radius: 12px; font-weight: 800; display: block; text-decoration: none; }}
-    
-    /* Metrics Box Text Force Black */
-    div[data-testid="stMetricValue"] > div {{ color: #000000 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -126,9 +122,7 @@ def get_gmaps(home, waypoints):
 # --- CORE LOGIC ---
 def process_pod(pod_name):
     config = POD_CONFIGS[pod_name]
-    # Replaced floating text with progress bar inside the pod UI
-    progress_bar = st.progress(0, text=f"📥 Syncing {pod_name} Pod database...")
-    
+    progress_bar = st.progress(0, text=f"📥 Syncing {pod_name} database...")
     try:
         all_tasks = []
         url = f"https://onfleet.com/api/v2/tasks/all?state=0&from={int(time.time()*1000)-(80*24*3600*1000)}"
@@ -136,7 +130,7 @@ def process_pod(pod_name):
             res = requests.get(url, headers=headers).json()
             all_tasks.extend(res.get('tasks', []))
             url = f"https://onfleet.com/api/v2/tasks/all?state=0&from={int(time.time()*1000)-(80*24*3600*1000)}&lastId={res['lastId']}" if res.get('lastId') else None
-            progress_bar.progress(min(len(all_tasks)/500, 0.9)) # Visual feedback
+            progress_bar.progress(min(len(all_tasks)/500, 0.9))
 
         pool = []
         for t in all_tasks:
@@ -160,7 +154,7 @@ def process_pod(pod_name):
             clusters.append({
                 "data": group, 
                 "center": [anc['lat'], anc['lon']], 
-                "stops": len(set(x['full'] for x in group)), 
+                "stops": len(set(x['full'] for x in group)), # RE-ESTABLISHED 'stops' KEY
                 "city": anc['city'], "state": anc['state']
             })
         st.session_state[f"clusters_{pod_name}"] = clusters
@@ -171,8 +165,10 @@ def process_pod(pod_name):
 
 def render_dispatch(i, cluster, pod_name):
     task_ids = [str(t['id']).strip() for t in cluster['data']]
+    cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
+    sync_key = f"sync_{cluster_hash}"
+    real_id = st.session_state.get(sync_key)
     
-    st.write("### 📍 Stops Summary")
     loc_sum = {}
     for c in cluster['data']: loc_sum[c['full']] = loc_sum.get(c['full'], 0) + 1
     for addr, count in loc_sum.items(): st.markdown(f"**{addr}** ({count} Tasks)")
@@ -181,75 +177,94 @@ def render_dispatch(i, cluster, pod_name):
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy()
     
-    if not v_ics.empty:
-        v_ics['d'] = v_ics.apply(lambda x: haversine(cluster['center'][0], cluster['center'][1], x['Lat'], x['Lng']), axis=1)
-        v_ics = v_ics[v_ics['d'] <= 60].sort_values('d').head(5)
+    if v_ics.empty: st.error("IC database empty."); return
+    v_ics['d'] = v_ics.apply(lambda x: haversine(cluster['center'][0], cluster['center'][1], x['Lat'], x['Lng']), axis=1)
+    v_ics = v_ics[v_ics['d'] <= 60].sort_values('d').head(5)
 
-    if v_ics.empty:
-        st.error("No contractors found within 60 miles."); return
+    if v_ics.empty: st.error("No contractors found within 60 miles."); return
 
     ic_opts = {f"{r['Name']} ({round(r['d'],1)} mi)": r for _, r in v_ics.iterrows()}
     col_a, col_b, col_c = st.columns([2,1,1])
-    sel_name = col_a.selectbox("Contractor", list(ic_opts.keys()), key=f"sel_{i}_{pod_name}")
+    sel_label = col_a.selectbox("Contractor", list(ic_opts.keys()), key=f"sel_{i}_{pod_name}")
     rate = col_b.number_input("Rate/Stop", 16.0, 150.0, 18.0, key=f"rt_{i}_{pod_name}")
     due = col_c.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{i}_{pod_name}")
 
-    ic = ic_opts[sel_name]
+    ic = ic_opts[sel_label]
     mi, hrs, t_str = get_gmaps(ic['Location'], list(loc_sum.keys()))
     pay = round(max(cluster['stops'] * rate, hrs * 25.0), 2)
+    eff_stop = round(pay / cluster['stops'], 2) if cluster['stops'] > 0 else 0
+
+    st.markdown(f"**Financials:** ${pay:,.2f} (${eff_stop}/stop) | **Logistics:** {t_str} ({mi} mi)")
     
-    st.markdown(f"**Financials:** ${pay:,.2f} | **Time:** {t_str}")
+    # PAYLOAD PREVIEW
+    link_id = real_id if real_id else "LINK_PENDING"
+    sig = f"Work Order: {ic['Name']} - {datetime.now().strftime('%m%d%Y')}\nContractor: {ic['Name']}\nStops: {cluster['stops']}\nDue: {due.strftime('%A, %b %d')}\n\nAuthorize: {PORTAL_BASE_URL}?route={link_id}"
+    st.text_area("Preview", sig, height=130, key=f"tx_{i}_{pod_name}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if not real_id:
+            if st.button("☁️ Sync Work Order", key=f"btn_s_{i}_{pod_name}"):
+                home = ic['Location']
+                payload = {
+                    "icn": ic['Name'], "ice": ic['Email'], "due": str(due), "comp": pay, 
+                    "lCnt": cluster['stops'], "mi": mi, "time": t_str, "phone": str(ic['Phone']),
+                    "locs": " | ".join([home] + list(loc_sum.keys()) + [home]),
+                    "taskIds": ",".join(task_ids)
+                }
+                res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
+                if res.get("success"):
+                    st.session_state[sync_key] = res.get("routeId")
+                    st.rerun()
+        else: st.button("✅ Data Synced", disabled=True, key=f"dis_{i}_{pod_name}")
     
-    if st.button("☁️ Sync Work Order", key=f"sync_{i}_{pod_name}"):
-        st.success("Synced to Sheet Database!")
+    with col2:
+        if real_id:
+            gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={ic['Email']}&su=Route: {ic['Name']}&body={requests.utils.quote(sig)}"
+            st.markdown(f'<a href="{gmail_url}" target="_blank" class="gmail-btn">🚀 SEND GMAIL NOW</a>', unsafe_allow_html=True)
 
 def run_pod_tab(pod_name):
-    st.markdown(f"<h2 style='text-align:center;'>{pod_name} Pod</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align:center;'>{pod_name} Dashboard</h2>", unsafe_allow_html=True)
     if f"clusters_{pod_name}" not in st.session_state:
-        # Replaced simple button with a spinner wrapper
         if st.button(f"🚀 Initialize {pod_name} Data", key=f"init_{pod_name}"):
-            with st.spinner(f"Acquiring {pod_name} Pod data..."):
-                process_pod(pod_name)
-            st.rerun()
-        return
-    
-    cls = st.session_state[f"clusters_{pod_name}"]
-    if not cls: # IndexError Fix: Handle empty clusters
-        st.info(f"No tasks currently pending in the {pod_name} region.")
-        if st.button("🔄 Check Again", key=f"empty_ref_{pod_name}"):
             process_pod(pod_name); st.rerun()
         return
     
-    # Overview Grid
+    cls = st.session_state[f"clusters_{pod_name}"]
+    if not cls:
+        st.info("No tasks found.")
+        if st.button("🔄 Reload", key=f"rel_{pod_name}"): process_pod(pod_name); st.rerun()
+        return
+    
+    # Overhead Overview
     cfg = POD_CONFIGS[pod_name]
     c1, c2, c3, c4, c5 = st.columns(5)
-    for col, title, val in zip([c1, c2, c3, c4], ["Volume", "Clusters", "Active", "Flagged"], [len(cls), len(cls), 0, 0]):
-        col.markdown(f"<div style='background:{cfg['bg']}; border:1px solid {cfg['text']}33; border-radius:12px; padding:15px; text-align:center;'><p style='margin:0; font-size:10px; font-weight:800; color:{cfg['text']}; text-transform:uppercase;'>{title}</p><p style='margin:0; font-size:24px; font-weight:800; color:{cfg['text']};'>{val}</p></div>", unsafe_allow_html=True)
-    if c5.button("🔄 Sync", key=f"ref_{pod_name}"): process_pod(pod_name); st.rerun()
+    for col, t, v in zip([c1, c2, c3, c4], ["Volume", "Clusters", "Active", "Flagged"], [len(cls), len(cls), 0, 0]):
+        col.markdown(f"<div style='background:{cfg['bg']}; border:1px solid {cfg['text']}33; border-radius:12px; padding:15px; text-align:center;'><p style='margin:0; font-size:10px; font-weight:800; color:{cfg['text']}; text-transform:uppercase;'>{t}</p><p style='margin:0; font-size:24px; font-weight:800; color:{cfg['text']};'>{v}</p></div>", unsafe_allow_html=True)
+    c5.button("🔄 Sync", key=f"ref_{pod_name}", on_click=process_pod, args=(pod_name,))
 
     m = folium.Map(location=cls[0]['center'], zoom_start=6, tiles="cartodbpositron")
     st_folium(m, width=1100, height=400, key=f"map_{pod_name}")
     
-    t1, t2, t3 = st.tabs(["Dispatch Ready", "Active Outbox", "Under Review"])
-    with t1:
+    t_ready, t_out, t_rev = st.tabs(["Dispatch Ready", "Active Outbox", "Under Review"])
+    with t_ready:
         for i, c in enumerate(cls):
             with st.expander(f"📍 {c['city']}, {c['state']} | {c['stops']} Stops"): render_dispatch(i, c, pod_name)
 
-# --- START APP ---
+# --- START ---
 if "ic_df" not in st.session_state:
     try:
         url = f"{IC_SHEET_URL.split('/edit')[0]}/export?format=csv&gid=0"
         st.session_state.ic_df = pd.read_csv(url)
-    except: st.error("IC Database failed to load.")
+    except: st.error("Database connection failed.")
 
 st.markdown("<h1>Terraboost Tactical Command</h1>", unsafe_allow_html=True)
 tabs = st.tabs(["Global", "Blue", "Green", "Orange", "Purple", "Red"])
 
 with tabs[0]:
-    st.markdown("<h2 style='text-align:center;'>Network Sync</h2>", unsafe_allow_html=True)
-    if st.button("🛰️ Execute Full Global Sync", use_container_width=True):
-        with st.spinner("Global Audit in Progress..."):
-            for p in POD_CONFIGS.keys(): process_pod(p)
+    st.markdown("<h2 style='text-align:center;'>Global Sync</h2>", unsafe_allow_html=True)
+    if st.button("🛰️ Execute Full Global Sweep", use_container_width=True):
+        for p in POD_CONFIGS.keys(): process_pod(p)
         st.rerun()
 
 for i, pod in enumerate(["Blue", "Green", "Orange", "Purple", "Red"], 1):
