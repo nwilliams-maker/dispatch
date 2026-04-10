@@ -19,61 +19,74 @@ IC_SHEET_URL = "https://docs.google.com/spreadsheets/d/1y6wX0x93iDc3gdK_nZKLD-2Q
 
 SAVED_ROUTES_GID = "1477617688" 
 
-# Terraboost Media Brand Colors
 TB_PURPLE = "#633094"
 TB_GREEN = "#76bc21"
 TB_GRAY_BG = "#cbd5e1"
 TB_OFF_WHITE = "#f8fafc"
 TB_LIGHT_BLUE = "#f0f7ff"
 
-# Pod Configuration
 POD_CONFIGS = {
-    "Blue": {
-        "states": {"AL", "AR", "FL", "IL", "IA", "LA", "MI", "MN", "MS", "MO", "NC", "SC", "WI"},
-        "bg": "#dbeafe", "text": "#1e3a8a"
-    },
-    "Green": {
-        "states": {"CO", "DC", "GA", "IN", "KY", "MD", "NJ", "OH", "UT"},
-        "bg": "#dcfce7", "text": "#064e3b"
-    },
-    "Orange": {
-        "states": {"AK", "AZ", "CA", "HI", "ID", "NV", "OR", "WA"},
-        "bg": "#ffedd5", "text": "#7c2d12"
-    },
-    "Purple": {
-        "states": {"KS", "MT", "NE", "NM", "ND", "OK", "SD", "TN", "TX", "WY"},
-        "bg": "#f3e8ff", "text": "#581c87"
-    },
-    "Red": {
-        "states": {"CT", "DE", "ME", "MA", "NH", "NY", "PA", "RI", "VT", "VA", "WV"},
-        "bg": "#fee2e2", "text": "#7f1d1d"
-    }
+    "Blue": {"states": {"AL", "AR", "FL", "IL", "IA", "LA", "MI", "MN", "MS", "MO", "NC", "SC", "WI"}, "bg": "#dbeafe", "text": "#1e3a8a"},
+    "Green": {"states": {"CO", "DC", "GA", "IN", "KY", "MD", "NJ", "OH", "UT"}, "bg": "#dcfce7", "text": "#064e3b"},
+    "Orange": {"states": {"AK", "AZ", "CA", "HI", "ID", "NV", "OR", "WA"}, "bg": "#ffedd5", "text": "#7c2d12"},
+    "Purple": {"states": {"KS", "MT", "NE", "NM", "ND", "OK", "SD", "TN", "TX", "WY"}, "bg": "#f3e8ff", "text": "#581c87"},
+    "Red": {"states": {"CT", "DE", "ME", "MA", "NH", "NY", "PA", "RI", "VT", "VA", "WV"}, "bg": "#fee2e2", "text": "#7f1d1d"}
 }
 
 headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()).decode()}"}
 
 st.set_page_config(page_title="Terraboost Tactical Workspace", layout="wide")
 
-# --- UI STYLING (Color-Coded Tabs Fix) ---
+# --- UI STYLING (The Layout Fix) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
     
-    .stApp {{ background-color: {TB_GRAY_BG} !important; color: #000000 !important; font-family: 'Inter', sans-serif !important; }}
-    h1, h2, h3 {{ color: {TB_PURPLE} !important; font-weight: 800 !important; }}
-
-    /* TAB DYNAMICS */
-    .stTabs [data-baseweb="tab-list"] {{ gap: 8px; }}
+    /* Main Background and centering */
+    .stApp {{ 
+        background-color: {TB_GRAY_BG} !important; 
+        color: #000000 !important; 
+        font-family: 'Inter', sans-serif !important; 
+    }}
     
-    .stTabs [data-baseweb="tab"] {{
-        border-radius: 8px 8px 0 0 !important;
-        padding: 10px 20px !important;
-        font-weight: 700 !important;
-        border: 1px solid #94a3b8 !important;
+    /* Containerizing the content so it doesn't look "lost" on wide screens */
+    .main .block-container {{
+        max-width: 1200px;
+        padding-top: 2rem;
+        padding-bottom: 5rem;
     }}
 
-    /* Specific Tab Fills */
-    .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ background-color: #f1f5f9 !important; color: #475569 !important; }}
+    /* Title Styling */
+    h1 {{ 
+        color: {TB_PURPLE} !important; 
+        font-weight: 800 !important; 
+        text-align: center;
+        margin-bottom: 2rem !important;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }}
+
+    /* TAB STYLING - Modern pill layout */
+    .stTabs [data-baseweb="tab-list"] {{
+        justify-content: center;
+        gap: 12px;
+        background-color: rgba(255, 255, 255, 0.4);
+        padding: 10px;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        border-radius: 10px !important;
+        padding: 12px 24px !important;
+        font-weight: 700 !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+    }}
+
+    /* Tab colors */
+    .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ background-color: #ffffff !important; color: {TB_PURPLE} !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(2) {{ background-color: #dbeafe !important; color: #1e3a8a !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(3) {{ background-color: #dcfce7 !important; color: #064e3b !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(4) {{ background-color: #ffedd5 !important; color: #7c2d12 !important; }}
@@ -81,40 +94,34 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"]:nth-of-type(6) {{ background-color: #fee2e2 !important; color: #7f1d1d !important; }}
 
     .stTabs [aria-selected="true"] {{
-        border-bottom: 4px solid {TB_PURPLE} !important;
-        transform: translateY(-2px);
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        border: 2px solid {TB_PURPLE} !important;
     }}
 
-    /* Expander Styling */
+    /* Card Styling */
     div[data-testid="stExpander"] {{ 
-        border: 1.5px solid #94a3b8 !important; 
-        border-radius: 12px !important; 
+        border: none !important;
+        border-radius: 15px !important; 
         background-color: #FFFFFF !important;
-        margin-bottom: 12px; 
-    }}
-    
-    div[data-testid="stExpander"] details summary p {{ color: #000000 !important; font-weight: 800 !important; }}
-
-    /* Inputs */
-    div[data-baseweb="select"] > div, 
-    div[data-testid="stNumberInput"] input, 
-    div[data-testid="stDateInput"] input {{
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: 1.5px solid #cbd5e1 !important;
-        border-radius: 8px !important;
+        margin-bottom: 20px; 
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
     }}
 
+    /* Button Styling */
     .stButton>button {{ 
         background-color: {TB_PURPLE} !important; 
         color: #FFFFFF !important; 
         font-weight: 700 !important; 
-        border-radius: 10px !important; 
+        border-radius: 12px !important; 
+        border: none !important;
+        padding: 0.6rem 2rem !important;
     }}
-    
+
     .gmail-btn {{
         text-align: center; background-color: {TB_GREEN} !important; color: white !important; 
         padding: 12px; border-radius: 12px; font-weight: 800; text-decoration: none; display: block;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -168,7 +175,7 @@ def process_pod_data(pod_name):
     config = POD_CONFIGS[pod_name]
     ui_container = st.empty()
     with ui_container.container():
-        st.write(f"📡 Processing {pod_name} Pod...")
+        st.info(f"📡 Syncing {pod_name} Pod database...")
         all_tasks = []
         url = f"https://onfleet.com/api/v2/tasks/all?state=0&from={int(time.time() * 1000) - (80 * 24 * 3600 * 1000)}"
         while True:
@@ -210,6 +217,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     loc_sum = {c['full_addr']: 0 for c in cluster['data']}
     for c in cluster['data']: loc_sum[c['full_addr']] += 1
     
+    st.write("### 📍 Route Details")
     for addr, count in loc_sum.items(): st.markdown(f"**{addr}** ({count} Tasks)")
     st.divider()
 
@@ -219,7 +227,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     valid_ics = v_ics[v_ics['d'] <= 60].sort_values('d').head(5)
 
     if valid_ics.empty:
-        st.error("⚠️ No contractors found within 60 miles."); return
+        st.warning("No contractors found within 60 miles."); return
 
     ic_opts = {f"{row['Name']} ({round(row['d'], 1)} mi)": row for _, row in valid_ics.iterrows()}
     c_ic, c_rate, c_due = st.columns([2, 1, 1])
@@ -257,13 +265,13 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
         if real_gas_id:
             gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={sel_ic['Email']}&su=Route Request: {wo_title}&body={requests.utils.quote(sig)}"
             st.markdown(f'<a href="{gmail_url}" target="_blank" class="gmail-btn">🚀 SEND GMAIL NOW</a>', unsafe_allow_html=True)
-            if st.button("✔️ Mark Sent", key=f"mksent_{i}_{pod_name}"):
+            if st.button("✔️ Mark Sent Permanently", key=f"mksent_{i}_{pod_name}"):
                 requests.post(GAS_WEB_APP_URL, json={"action": "markSent", "routeId": real_gas_id}); st.rerun()
 
 def run_pod_tab(pod_name):
-    st.markdown(f"## {pod_name} Pod")
+    st.markdown(f"<h2 style='text-align:center;'>{pod_name} Pod Dashboard</h2>", unsafe_allow_html=True)
     if f"clusters_{pod_name}" not in st.session_state:
-        if st.button(f"📥 Initialize {pod_name}", key=f"init_{pod_name}"): process_pod_data(pod_name); st.rerun()
+        st.button(f"📥 Initialize {pod_name} Dataset", key=f"init_{pod_name}", on_click=process_pod_data, args=(pod_name,))
         return
     
     clusters = st.session_state[f"clusters_{pod_name}"]
@@ -283,8 +291,8 @@ def run_pod_tab(pod_name):
     c1, c2, c3, c4, c5 = st.columns(5)
     cfg = POD_CONFIGS[pod_name]
     for col, title, val in zip([c1, c2, c3, c4], ["Volume", "Ready", "Active", "Flagged"], [len(clusters), len(ready), len(sent), len(review)]):
-        col.markdown(f"<div style='background:{cfg['bg']}; border:1px solid {cfg['text']}44; border-radius:12px; padding:15px; margin-bottom:15px;'><p style='margin:0; font-size:10px; font-weight:800; color:{cfg['text']}; text-transform:uppercase;'>{title}</p><p style='margin:0; font-size:24px; font-weight:800; color:{cfg['text']};'>{val}</p></div>", unsafe_allow_html=True)
-    if c5.button("🔄 Sync", key=f"ref_{pod_name}"): st.session_state.sent_db = load_sent_records_from_sheet(IC_SHEET_URL); process_pod_data(pod_name); st.rerun()
+        col.markdown(f"<div style='background:{cfg['bg']}; border:1px solid {cfg['text']}44; border-radius:12px; padding:15px; text-align:center;'><p style='margin:0; font-size:10px; font-weight:800; color:{cfg['text']}; text-transform:uppercase;'>{title}</p><p style='margin:0; font-size:24px; font-weight:800; color:{cfg['text']};'>{val}</p></div>", unsafe_allow_html=True)
+    c5.button("🔄 Sync", key=f"ref_{pod_name}", on_click=process_pod_data, args=(pod_name,))
 
     m = folium.Map(location=clusters[0]['center'], zoom_start=6, tiles="cartodbpositron")
     for c in ready: folium.CircleMarker(c['center'], radius=10, color=TB_GREEN, fill=True, opacity=0.8).add_to(m)
@@ -295,7 +303,7 @@ def run_pod_tab(pod_name):
     t1, t2, t3 = st.tabs(["Dispatch Ready", "Active Outbox", "Under Review"])
     with t1:
         for i, c in enumerate(ready):
-            with st.expander(f"{c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i, c, pod_name)
+            with st.expander(f"📍 {c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i, c, pod_name)
     with t2:
         for i, c in enumerate(sent):
             with st.expander(f"✓ {c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i+500, c, pod_name, is_sent=True)
@@ -309,8 +317,9 @@ if "sent_db" not in st.session_state: st.session_state.sent_db = load_sent_recor
 st.markdown("<h1>Terraboost Media Command</h1>", unsafe_allow_html=True)
 tabs = st.tabs(["Global", "Blue", "Green", "Orange", "Purple", "Red"])
 with tabs[0]: 
-    st.markdown("## Global Overview")
-    if st.button("🚀 Sync All Pods"): 
+    st.markdown("<h2 style='text-align:center;'>Global Overview</h2>", unsafe_allow_html=True)
+    c_btn = st.columns([1,2,1])[1]
+    if c_btn.button("🚀 Execute Global Sync", use_container_width=True): 
         st.session_state.sent_db = load_sent_records_from_sheet(IC_SHEET_URL)
         for pod in POD_CONFIGS.keys(): process_pod_data(pod)
         st.rerun()
