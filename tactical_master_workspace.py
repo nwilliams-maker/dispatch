@@ -55,23 +55,71 @@ headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()
 
 st.set_page_config(page_title="Network Command Center", layout="wide")
 
-# --- UI STYLING (Forced Black Text) ---
+# --- UI STYLING (Cool Gray BG + Darker Titles + Light Blue Prompt Box) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-    .stApp {{ background-color: #f4f5f7 !important; color: #000000 !important; font-family: 'Roboto', sans-serif !important; }}
+    
+    /* Main Background: Light-Medium Cool Gray */
+    .stApp {{ 
+        background-color: #cbd5e1 !important; 
+        color: #000000 !important; 
+        font-family: 'Roboto', sans-serif !important; 
+    }}
+    
     h1, h2, h3 {{ color: {TB_PURPLE} !important; font-weight: 800 !important; }}
-    div[data-testid="stExpander"] {{ border: 1px solid #d0d4e4 !important; border-radius: 8px !important; margin-bottom: 12px; }}
-    div[data-testid="stExpander"] details summary {{ background-color: {TB_LIGHT_BLUE} !important; padding: 12px !important; border-radius: 8px 8px 0 0 !important; }}
-    div[data-testid="stExpander"] details summary p {{ color: #000000 !important; font-weight: 700 !important; font-size: 16px !important; }}
-    .metric-box {{ border-left: 5px solid {TB_PURPLE}; padding: 12px 15px; margin-bottom: 15px; background: white; border-radius: 0 4px 4px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+    
+    /* Expander styling - White cards with dark borders */
+    div[data-testid="stExpander"] {{ 
+        border: 1px solid #64748b !important; 
+        border-radius: 12px !important; 
+        background-color: #FFFFFF !important;
+        margin-bottom: 12px; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }}
+    
+    /* Darker summary text for the cards */
+    div[data-testid="stExpander"] details summary p {{ 
+        color: #000000 !important; 
+        font-weight: 800 !important; 
+        font-size: 16px !important; 
+    }}
+    
+    /* Prompt Box (TextArea) specific styling */
+    div[data-testid="stTextArea"] textarea {{
+        background-color: {TB_LIGHT_BLUE} !important;
+        color: #000000 !important;
+        border: 1px solid #94a3b8 !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+    }}
+
+    /* Metrics Boxes */
+    .metric-box {{ 
+        border-left: 5px solid {TB_PURPLE}; 
+        padding: 12px 15px; 
+        margin-bottom: 15px; 
+        background: white; 
+        border-radius: 0 8px 8px 0; 
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    }}
     .metric-title {{ font-size: 11px; text-transform: uppercase; color: #000000 !important; font-weight: 800; }}
     .metric-value {{ font-size: 20px; color: #000000 !important; font-weight: 800; }}
-    .stButton>button {{ background-color: {TB_PURPLE} !important; color: #000000 !important; font-weight: 700 !important; border-radius: 6px !important; width: 100%; border: 1px solid #323338 !important; }}
+    
+    /* Buttons */
+    .stButton>button {{ 
+        background-color: {TB_PURPLE} !important; 
+        color: #FFFFFF !important; 
+        font-weight: 700 !important; 
+        border-radius: 8px !important; 
+        width: 100%; 
+        border: none !important;
+    }}
     .stButton>button:hover {{ background-color: {TB_GREEN} !important; color: #000000 !important; }}
-    div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 700 !important; }}
-    textarea {{ color: #000000 !important; }}
-    .stTabs [data-baseweb="tab"] {{ color: #000000 !important; }}
+    
+    /* Tab color consistency */
+    .stTabs [data-baseweb="tab"] {{ color: #000000 !important; font-weight: 700 !important; }}
+    div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 800 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -130,7 +178,6 @@ def load_ic_database(sheet_url):
         return pd.read_csv(export_url)
     except: return None
 
-# --- PROCESSING ---
 def process_pod_data(pod_name):
     config = POD_CONFIGS[pod_name]
     ui_container = st.empty()
