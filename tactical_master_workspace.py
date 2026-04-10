@@ -23,7 +23,11 @@ TB_PURPLE = "#633094"
 TB_GREEN = "#76bc21"
 TB_APP_BG = "#f1f5f9"    
 TB_HOVER_GRAY = "#e2e8f0" 
-TB_RED_FILL = "#ffcccc" # Red fill for the Flagged box
+
+# Status Fills
+TB_GREEN_FILL = "#dcfce7" # Ready
+TB_BLUE_FILL = "#dbeafe"  # Sent
+TB_RED_FILL = "#ffcccc"   # Flagged
 
 POD_CONFIGS = {
     "Blue": {"states": {"AL", "AR", "FL", "IL", "IA", "LA", "MI", "MN", "MS", "MO", "NC", "SC", "WI"}},
@@ -60,9 +64,11 @@ st.markdown(f"""
     
     h1, h2, h3, h4, h5, h6 {{ color: #000000 !important; font-weight: 800 !important; }}
 
+    /* GLOBAL TABS STYLING */
     .stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 15px; }}
     .stTabs [data-baseweb="tab"] {{ border-radius: 10px !important; padding: 10px 20px !important; font-weight: 700 !important; }}
     
+    /* TOP LEVEL TABS (Pod Colors) */
     .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ background-color: #ffffff !important; color: #000000 !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(2) {{ background-color: #dbeafe !important; color: #000000 !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(3) {{ background-color: #dcfce7 !important; color: #000000 !important; }}
@@ -71,15 +77,13 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"]:nth-of-type(6) {{ background-color: #fee2e2 !important; color: #000000 !important; }}
     .stTabs [aria-selected="true"] {{ transform: scale(1.05); border: 2px solid {TB_PURPLE} !important; }}
 
-    /* CRITICAL: Overriding dark theme bleed on Expander Cards */
-    div[data-testid="stExpander"] {{ 
-        border: 1px solid #cbd5e1 !important; 
-        border-radius: 15px !important; 
-        background-color: #ffffff !important; 
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); 
-        margin-bottom: 20px; 
-        overflow: hidden; 
-    }}
+    /* NESTED SUB-TABS OVERRIDE (Ready = Green, Sent = Blue, Flagged = Red) */
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(1) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }}
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(2) {{ background-color: {TB_BLUE_FILL} !important; color: #000000 !important; }}
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(3) {{ background-color: {TB_RED_FILL} !important; color: #000000 !important; }}
+
+    /* Expander Cards - Pure White Base */
+    div[data-testid="stExpander"] {{ border: 1px solid #cbd5e1 !important; border-radius: 15px !important; background: #ffffff !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; }}
     div[data-testid="stExpander"] > details,
     div[data-testid="stExpander"] > details > summary,
     div[data-testid="stExpander"] > details > summary:hover,
@@ -394,8 +398,9 @@ def run_pod_tab(pod_name):
     c1, c2, c3, c4 = st.columns([1,1,1, 1.2])
     for col, title, val in zip([c1, c2, c3], ["Ready", "Sent", "Flagged"], [len(ready), len(sent), len(review)]):
         
-        # Apply the red fill specifically for Flagged
-        bg_color = TB_RED_FILL if title == "Flagged" else "#f8fafc"
+        if title == "Ready": bg_color = TB_GREEN_FILL
+        elif title == "Sent": bg_color = TB_BLUE_FILL
+        else: bg_color = TB_RED_FILL
         
         col.markdown(f"""
             <div style='background:{bg_color}; border:1px solid #cbd5e1; border-radius:12px; padding:15px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
