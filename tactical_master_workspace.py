@@ -18,10 +18,10 @@ GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbynAIziubArSQ0hVGTvJM
 IC_SHEET_URL = "https://docs.google.com/spreadsheets/d/1y6wX0x93iDc3gdK_nZKLD-2QcGkUHkcM75u90ffRO6k/edit#gid=0"
 SAVED_ROUTES_GID = "1477617688" 
 
-# Terraboost Media Brand Palette
-TB_PURPLE = "#633094"
+# Palette Adjustments based on your request
+TB_NEW_FILL = "#cbd5e1"  # The new fill for buttons/accents
+TB_APP_BG = "#f1f5f9"    # Lightened app bg so the cbd5e1 fill stands out
 TB_GREEN = "#76bc21"
-TB_GRAY_BG = "#cbd5e1"
 TB_OFF_WHITE = "#f8fafc"
 TB_LIGHT_BLUE = "#f0f7ff"
 
@@ -55,25 +55,32 @@ st.set_page_config(page_title="Tactical Command", layout="wide")
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-    .stApp {{ background-color: {TB_GRAY_BG} !important; color: #000000 !important; font-family: 'Inter', sans-serif !important; }}
+    .stApp {{ background-color: {TB_APP_BG} !important; color: #000000 !important; font-family: 'Inter', sans-serif !important; }}
     .main .block-container {{ max-width: 1100px !important; padding-top: 2rem; }}
     
-    .stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.4); padding: 10px; border-radius: 15px; }}
+    h1, h2, h3, h4, h5, h6 {{ color: #000000 !important; font-weight: 800 !important; }}
+
+    .stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 15px; }}
     .stTabs [data-baseweb="tab"] {{ border-radius: 10px !important; padding: 10px 20px !important; font-weight: 700 !important; }}
     
-    .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ background-color: #ffffff !important; color: {TB_PURPLE} !important; }}
-    .stTabs [data-baseweb="tab"]:nth-of-type(2) {{ background-color: #dbeafe !important; color: #1e3a8a !important; }}
-    .stTabs [data-baseweb="tab"]:nth-of-type(3) {{ background-color: #dcfce7 !important; color: #064e3b !important; }}
-    .stTabs [data-baseweb="tab"]:nth-of-type(4) {{ background-color: #ffedd5 !important; color: #7c2d12 !important; }}
-    .stTabs [data-baseweb="tab"]:nth-of-type(5) {{ background-color: #f3e8ff !important; color: #581c87 !important; }}
-    .stTabs [data-baseweb="tab"]:nth-of-type(6) {{ background-color: #fee2e2 !important; color: #7f1d1d !important; }}
-    .stTabs [aria-selected="true"] {{ transform: scale(1.05); border: 2px solid {TB_PURPLE} !important; }}
+    .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ background-color: #ffffff !important; color: #000000 !important; }}
+    .stTabs [data-baseweb="tab"]:nth-of-type(2) {{ background-color: #dbeafe !important; color: #000000 !important; }}
+    .stTabs [data-baseweb="tab"]:nth-of-type(3) {{ background-color: #dcfce7 !important; color: #000000 !important; }}
+    .stTabs [data-baseweb="tab"]:nth-of-type(4) {{ background-color: #ffedd5 !important; color: #000000 !important; }}
+    .stTabs [data-baseweb="tab"]:nth-of-type(5) {{ background-color: #f3e8ff !important; color: #000000 !important; }}
+    .stTabs [data-baseweb="tab"]:nth-of-type(6) {{ background-color: #fee2e2 !important; color: #000000 !important; }}
+    .stTabs [aria-selected="true"] {{ transform: scale(1.05); border: 2px solid {TB_NEW_FILL} !important; }}
 
-    div[data-testid="stExpander"] {{ border: none !important; border-radius: 15px !important; background: #fff !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 20px; }}
-    div[data-testid="stExpander"] details summary p {{ color: #000 !important; font-weight: 800 !important; }}
+    div[data-testid="stExpander"] {{ border: 1px solid #94a3b8 !important; border-radius: 15px !important; background: #fff !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); margin-bottom: 20px; }}
+    div[data-testid="stExpander"] details summary p {{ color: #000000 !important; font-weight: 800 !important; }}
+    
     div[data-baseweb="select"] > div, div[data-testid="stNumberInput"] input, div[data-testid="stDateInput"] input {{ background-color: #ffffff !important; color: #000000 !important; border: 1.5px solid #cbd5e1 !important; }}
-    .stButton>button {{ background-color: {TB_PURPLE} !important; color: #FFFFFF !important; font-weight: 700 !important; border-radius: 12px !important; width: 100%; }}
-    .gmail-btn {{ text-align: center; background-color: {TB_GREEN} !important; color: white !important; padding: 12px; border-radius: 12px; font-weight: 800; display: block; text-decoration: none; }}
+    
+    /* Changed all button fills to cbd5e1 and text to black */
+    .stButton>button {{ background-color: {TB_NEW_FILL} !important; color: #000000 !important; font-weight: 800 !important; border-radius: 12px !important; width: 100%; border: 1px solid #94a3b8 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
+    .gmail-btn {{ text-align: center; background-color: {TB_NEW_FILL} !important; color: #000000 !important; padding: 12px; border-radius: 12px; font-weight: 800; display: block; text-decoration: none; border: 1px solid #94a3b8 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
+    
+    div[data-testid="stMetricValue"] > div {{ color: #000000 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -153,7 +160,6 @@ def process_pod(pod_name):
         total_pool = len(pool)
         
         while pool:
-            # Update progress bar dynamically based on remaining pool
             prog_val = 0.4 + (0.6 * (1 - (len(pool) / total_pool if total_pool > 0 else 1)))
             progress_bar.progress(min(prog_val, 0.99), text=f"🗺️ Auto-routing {pod_name}... ({len(pool)} tasks remaining)")
             
@@ -161,25 +167,21 @@ def process_pod(pod_name):
             candidates = []
             rem = []
             
-            # Find all tasks within 50 miles
             for t in pool:
                 d = haversine(anc['lat'], anc['lon'], t['lat'], t['lon'])
                 if d <= 50: candidates.append((d, t))
                 else: rem.append(t)
             
-            # Sort candidates by distance to anchor (closest first)
             candidates.sort(key=lambda x: x[0])
             group = [anc] + [c[1] for c in candidates]
             
-            # Helper to check financial viability of a group
             def check_viability(grp):
-                # Get unique locations preserving order
                 seen = set(); unique_locs = []
                 for x in grp:
                     if x['full'] not in seen:
                         seen.add(x['full']); unique_locs.append(x['full'])
                 if not unique_locs: return 0, 0
-                waypts = unique_locs[:25] # Limit for API
+                waypts = unique_locs[:25] 
                 _, hrs, _ = get_gmaps(f"{anc['lat']},{anc['lon']}", waypts)
                 avg = (hrs * 25.0) / len(unique_locs) if len(unique_locs) > 0 else 0
                 return avg, len(unique_locs)
@@ -187,23 +189,20 @@ def process_pod(pod_name):
             gate_avg, u_count = check_viability(group)
             status = "Ready"
             
-            # THE PRUNING LOGIC: If unacceptable, drop up to 3 farthest stops
             if gate_avg > 23.0 and len(group) > 1:
                 removed_stops = []
                 passed = False
                 for _ in range(min(3, len(group) - 1)):
-                    removed_stops.append(group.pop()) # Removes the farthest stop
+                    removed_stops.append(group.pop()) 
                     new_avg, _ = check_viability(group)
                     if new_avg <= 23.0:
                         passed = True
                         break
                 
                 if passed:
-                    # Pruning worked! Send the removed stops back to the pool
                     rem.extend(removed_stops)
                     status = "Ready"
                 else:
-                    # Pruning failed. Put them back in the group and flag it.
                     group.extend(removed_stops[::-1])
                     status = "Flagged"
             
@@ -260,14 +259,13 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
     due = col_c.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{i}_{pod_name}")
 
     ic = ic_opts[sel_label]
-    # Slice to 25 to prevent Google Maps API crash on giant routes
     mi, hrs, t_str = get_gmaps(ic['Location'], list(loc_sum.keys())[:25])
     pay = round(max(cluster['stops'] * rate, hrs * 25.0), 2)
     eff_stop = round(pay / cluster['stops'], 2) if cluster['stops'] > 0 else 0
 
     m1, m2 = st.columns(2)
-    with m1: st.markdown(f"<div style='background:{TB_OFF_WHITE}; border:1px solid #e2e8f0; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{TB_GREEN if eff_stop <= 23.00 else '#ef4444'};'>Total: ${pay:,.2f}</p><p style='margin:0; font-size:13px; color:black;'>Effective: ${eff_stop}/stop</p></div>", unsafe_allow_html=True)
-    with m2: st.markdown(f"<div style='background:{TB_OFF_WHITE}; border:1px solid #e2e8f0; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;'>Logistics</p><p style='margin:0; font-size:24px; font-weight:800; color:black;'>{t_str}</p><p style='margin:0; font-size:13px; color:black;'>Round Trip: {mi} mi</p></div>", unsafe_allow_html=True)
+    with m1: st.markdown(f"<div style='background:{TB_OFF_WHITE}; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{TB_GREEN if eff_stop <= 23.00 else '#ef4444'};'>Total: ${pay:,.2f}</p><p style='margin:0; font-size:13px; color:#000000;'>Effective: ${eff_stop}/stop</p></div>", unsafe_allow_html=True)
+    with m2: st.markdown(f"<div style='background:{TB_OFF_WHITE}; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Logistics</p><p style='margin:0; font-size:24px; font-weight:800; color:#000000;'>{t_str}</p><p style='margin:0; font-size:13px; color:#000000;'>Round Trip: {mi} mi</p></div>", unsafe_allow_html=True)
 
     sig = (f"Work Order: {ic['Name']} - {datetime.now().strftime('%m%d%Y')}\nContractor: {ic['Name']}\nDue Date: {due.strftime('%A, %b %d, %Y')}\n\n"
            f"Metrics:\n- Stops: {cluster['stops']}\n- Mileage: {mi} mi\n- Time: {t_str}\n- Compensation: ${pay:.2f}\n\n"
@@ -326,12 +324,11 @@ def run_pod_tab(pod_name):
             if c.get('status') == "Ready": ready.append(c)
             else: review.append(c)
     
-    # Standardized 3 Items Overview
     c1, c2, c3, c4 = st.columns([1,1,1, 1.2])
     for col, title, val in zip([c1, c2, c3], ["Ready", "Sent", "Flagged"], [len(ready), len(sent), len(review)]):
         col.markdown(f"""
-            <div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:15px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
-                <p style='margin:0; font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;'>{title}</p>
+            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:15px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);'>
+                <p style='margin:0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>{title}</p>
                 <p style='margin:0; font-size:26px; font-weight:800; color:#000000;'>{val}</p>
             </div>
         """, unsafe_allow_html=True)
