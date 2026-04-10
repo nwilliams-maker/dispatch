@@ -55,7 +55,7 @@ headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()
 
 st.set_page_config(page_title="Network Command Center", layout="wide")
 
-# --- UI STYLING (Refined Design) ---
+# --- UI STYLING (Modernized Tabs + Refined Fields) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
@@ -67,11 +67,40 @@ st.markdown(f"""
     }}
     
     h1, h2, h3 {{ color: #1e293b !important; font-weight: 800 !important; letter-spacing: -0.02em; }}
-    
+
+    /* MODERN NAVIGATION (TABS) */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 10px;
+        background-color: rgba(255, 255, 255, 0.3);
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        margin-bottom: 20px;
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        height: 45px;
+        white-space: pre;
+        background-color: transparent;
+        border-radius: 10px;
+        color: #475569 !important;
+        font-weight: 600;
+        border: none !important;
+        transition: all 0.3s ease;
+        padding: 0 20px;
+    }}
+
+    .stTabs [aria-selected="true"] {{
+        background-color: white !important;
+        color: {TB_PURPLE} !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: scale(1.02);
+    }}
+
     /* Expander styling */
     div[data-testid="stExpander"] {{ 
         border: 1px solid #94a3b8 !important; 
-        border-radius: 16px !important; 
+        border-radius: 20px !important; 
         background-color: #FFFFFF !important;
         margin-bottom: 16px; 
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -81,49 +110,44 @@ st.markdown(f"""
     div[data-testid="stExpander"] details summary p {{ 
         color: #0f172a !important; 
         font-weight: 700 !important; 
-        font-size: 17px !important; 
+        font-size: 18px !important; 
     }}
 
     /* Light, Clean Input Fields */
     div[data-baseweb="select"] > div, 
     div[data-testid="stNumberInput"] input, 
     div[data-testid="stDateInput"] input {{
-        background-color: #ffffff !important;
+        background-color: #f8fafc !important;
         color: #0f172a !important;
         border: 1.5px solid #e2e8f0 !important;
-        border-radius: 10px !important;
-        padding: 4px 8px !important;
-    }}
-    
-    div[data-baseweb="select"] > div:hover {{
-        border-color: {TB_BLUE} !important;
+        border-radius: 12px !important;
+        padding: 8px 12px !important;
     }}
     
     /* Email Payload Box - Refined Blue */
     div[data-testid="stTextArea"] textarea {{
-        background-color: #f0f7ff !important;
+        background-color: #f1f7ff !important;
         color: #1e3a8a !important;
-        border: 1px solid #bfdbfe !important;
-        border-radius: 12px !important;
-        font-family: 'Courier New', Courier, monospace !important;
-        font-size: 13px !important;
-        line-height: 1.5 !important;
+        border: 1.5px solid #d0e3ff !important;
+        border-radius: 14px !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
     }}
 
-    /* Summary Card Styling */
     .summary-card {{
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 10px;
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 12px;
     }}
 
     .metric-box {{ 
-        border-radius: 12px; 
-        padding: 15px; 
+        border-radius: 16px; 
+        padding: 18px; 
         background: white; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         border: 1px solid #e2e8f0;
     }}
     
@@ -131,17 +155,19 @@ st.markdown(f"""
         background-color: {TB_PURPLE} !important; 
         color: #FFFFFF !important; 
         font-weight: 700 !important; 
-        border-radius: 10px !important; 
-        height: 3em !important;
-        transition: all 0.2s;
+        border-radius: 12px !important; 
+        height: 3.5em !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none !important;
     }}
     
     .stButton>button:hover {{ 
         background-color: #4c1d95 !important;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(99, 48, 148, 0.3);
     }}
     
-    div[data-testid="stWidgetLabel"] p {{ color: #475569 !important; font-weight: 700 !important; text-transform: uppercase; font-size: 11px !important; letter-spacing: 0.05em; }}
+    div[data-testid="stWidgetLabel"] p {{ color: #64748b !important; font-weight: 800 !important; text-transform: uppercase; font-size: 11px !important; letter-spacing: 0.08em; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -200,7 +226,6 @@ def load_ic_database(sheet_url):
         return pd.read_csv(export_url)
     except: return None
 
-# --- PROCESSING ---
 def process_pod_data(pod_name):
     config = POD_CONFIGS[pod_name]
     ui_container = st.empty()
@@ -269,7 +294,6 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
 
     ic_opts = {f"{row['Name']} ({round(row['d'], 1)} mi)": row for _, row in valid_ics.iterrows()}
     
-    # Selection Grid
     c_ic, c_rate, c_due = st.columns([2, 1, 1])
     sel_label = c_ic.selectbox("Select Contractor", list(ic_opts.keys()), key=f"s_{i}_{pod_name}")
     rate = c_rate.number_input("Rate / Stop", 16.0, 150.0, 18.0, 0.5, key=f"r_{i}_{pod_name}")
@@ -278,13 +302,11 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     sel_ic = ic_opts[sel_label]
     mi, hrs, t_str = fetch_gmaps_directions(sel_ic['Location'], tuple(list(loc_sum.keys())[:10]))
     
-    # Financial Logic
     stop_count = cluster['unique_count']
     pay = round(max(stop_count * rate, hrs * HOURLY_FLOOR_RATE), 2)
     eff_stop = round(pay / stop_count, 2) if stop_count > 0 else 0
     is_critical = eff_stop > REVIEW_PER_STOP_LIMIT
 
-    # Split View for Metrics
     m1, m2 = st.columns(2)
     with m1:
         st.markdown(f"""
@@ -311,7 +333,6 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     
     st.text_area("Final Email Content", sig, height=220, key=f"area_{i}_{pod_name}_{sel_ic['Name']}")
 
-    # --- ACTIONS ---
     col1, col2 = st.columns(2)
     with col1:
         if not real_gas_id:
@@ -338,7 +359,7 @@ def render_dispatch_logic(i, cluster, pod_name, is_sent=False):
     with col2:
         if real_gas_id:
             gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={sel_ic['Email']}&su=Route Request: {wo_title}&body={requests.utils.quote(sig)}"
-            st.markdown(f'<a href="{gmail_url}" target="_blank" style="text-decoration:none;"><div style="text-align:center; background-color:{TB_GREEN}; color:white; padding:12px; border-radius:10px; font-weight:800; border:1.5px solid #323338;">🚀 SEND GMAIL</div></a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="{gmail_url}" target="_blank" style="text-decoration:none;"><div style="text-align:center; background-color:{TB_GREEN}; color:white; padding:12px; border-radius:12px; font-weight:800; border:none; box-shadow: 0 4px 10px rgba(118, 188, 33, 0.3);">🚀 SEND GMAIL</div></a>', unsafe_allow_html=True)
             if st.button("✔️ Finalize & Mark Sent", key=f"mksent_{i}_{pod_name}"):
                 requests.post(GAS_WEB_APP_URL, json={"action": "markSent", "routeId": real_gas_id})
                 st.session_state[sent_key] = {"contractor": sel_ic['Name'], "time": datetime.now().strftime("%I:%M %p")}
@@ -382,7 +403,7 @@ def run_pod_tab(pod_name):
     for c in review: folium.CircleMarker(c['center'], radius=10, color=TB_RED, fill=True, opacity=0.8).add_to(m)
     st_folium(m, use_container_width=True, height=400, key=f"map_{pod_name}")
     
-    t1, t2, t3 = st.tabs(["🟢 Dispatch Ready", "📧 Active Outbox", "🔴 Under Review"])
+    t1, t2, t3 = st.tabs(["Dispatch Ready", "Active Outbox", "Under Review"])
     with t1:
         for i, c in enumerate(ready):
             with st.expander(f"{c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i, c, pod_name)
@@ -391,7 +412,7 @@ def run_pod_tab(pod_name):
             with st.expander(f"✓ {c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i+500, c, pod_name, is_sent=True)
     with t3:
         for i, c in enumerate(review):
-            with st.expander(f"⚠ {c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i+1000, c, pod_name)
+            with st.expander(f"🔴 {c['city']}, {c['state']} | {c['unique_count']} Stops"): render_dispatch_logic(i+1000, c, pod_name)
 
 def run_global_tab():
     st.markdown("## Global Network Sync")
@@ -404,7 +425,7 @@ if "ic_df" not in st.session_state: st.session_state.ic_df = load_ic_database(IC
 if "sent_db" not in st.session_state: st.session_state.sent_db = load_sent_records_from_sheet(IC_SHEET_URL)
 
 st.markdown("<h1>Workspace Command</h1>", unsafe_allow_html=True)
-tabs = st.tabs(["Global", "Blue Pod", "Green Pod", "Orange Pod", "Purple Pod", "Red Pod"])
+tabs = st.tabs(["Global Network", "Blue Pod", "Green Pod", "Orange Pod", "Purple Pod", "Red Pod"])
 with tabs[0]: run_global_tab()
 with tabs[1]: run_pod_tab("Blue Pod")
 with tabs[2]: run_pod_tab("Green Pod")
