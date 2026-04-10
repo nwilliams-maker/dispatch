@@ -140,56 +140,83 @@
         };
 
         async function submitFinalResponse() {
-    const decision = document.querySelector('input[name="ic_decision"]:checked').value;
-    const sig = document.getElementById('typed_sig').value;
-    const consent = document.getElementById('legal_consent').checked;
-    const counter = document.getElementById('ic_counter_val').value;
-    const notes = document.getElementById('ic_notes').value;
+            const decision = document.querySelector('input[name="ic_decision"]:checked').value;
+            const sig = document.getElementById('typed_sig').value;
+            const consent = document.getElementById('legal_consent').checked;
+            const counter = document.getElementById('ic_counter_val').value;
+            const notes = document.getElementById('ic_notes').value;
 
-    if (decision === 'Accepted' && (!sig || !consent)) return alert("Signature and consent required.");
-    
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true; 
-    btn.innerHTML = "Saving Response...";
+            if (decision === 'Accepted' && (!sig || !consent)) return alert("Signature and consent required.");
+            
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true; 
+            
+            // --- VISUAL LOADING STATE ---
+            if (decision === 'Accepted') {
+                btn.innerHTML = `<div class="flex items-center justify-center gap-3"><div class="spinner" style="width:20px; height:20px; border-width:2px; border-top-color:#ffffff;"></div><span>Assigning Tasks to App...</span></div>`;
+            } else {
+                btn.innerHTML = `<div class="flex items-center justify-center gap-3"><div class="spinner" style="width:20px; height:20px; border-width:2px; border-top-color:#ffffff;"></div><span>Processing Decline...</span></div>`;
+            }
 
-    try {
-        // --- CRITICAL FIX: Update action to "processDecision" and pass phone/taskIds ---
-        const gasPayload = {
-            action: "processDecision", 
-            routeId: window.currentRouteId,
-            decision: decision,
-            signature: sig,
-            notes: notes,
-            phone: window.payloadData.phone || "",       // Pass phone for Onfleet worker lookup
-            taskIds: window.payloadData.taskIds || ""    // Pass taskIds for Onfleet assignment
-        };
+            try {
+                // Pass phone & taskIds to trigger the backend Onfleet logic
+                const gasPayload = {
+                    action: "processDecision", 
+                    routeId: window.currentRouteId,
+                    decision: decision,
+                    signature: sig,
+                    notes: notes,
+                    phone: window.payloadData.phone || "",       
+                    taskIds: window.payloadData.taskIds || ""    
+                };
 
-        await fetch(webAppUrl, {
-            method: 'POST',
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(gasPayload)
-        });
+                const response = await fetch(webAppUrl, {
+                    method: 'POST',
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(gasPayload)
+                });
+                
+                const result = await response.json();
 
-        await fetch(formspreeUrl, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                _subject: `${decision}: WO #${window.payloadData.wo} (${window.payloadData.icn})`,
-                Decision: decision,
-                Contractor: window.payloadData.icn,
-                "Work Order": window.payloadData.wo,
-                Signature: sig
-            })
-        });
+                await fetch(formspreeUrl, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        _subject: `${decision}: WO #${window.payloadData.wo} (${window.payloadData.icn})`,
+                        Decision: decision,
+                        Contractor: window.payloadData.icn,
+                        "Work Order": window.payloadData.wo,
+                        Signature: sig,
+                        "Onfleet Assignment": result.onfleetSuccess ? "Success" : "Failed or Skipped"
+                    })
+                });
 
-        document.getElementById('icMode').classList.add('hidden');
-        document.getElementById('successView').classList.remove('hidden');
+                // Hide the form UI
+                document.getElementById('icMode').classList.add('hidden');
+                
+                // --- DYNAMIC SUCCESS WINDOW ---
+                const successContainer = document.getElementById('successView');
+                if (decision === 'Accepted') {
+                    successContainer.innerHTML = `
+                        <div class="text-7xl mb-6">✅</div>
+                        <h2 class="text-4xl font-black uppercase text-slate-900 tracking-tight">Tasks Assigned!</h2>
+                        <p class="text-slate-500 mt-4 font-medium text-lg">The route has been successfully pushed to your Onfleet app.<br>You may now close this window.</p>
+                    `;
+                } else {
+                    successContainer.innerHTML = `
+                        <div class="text-7xl mb-6">✅</div>
+                        <h2 class="text-4xl font-black uppercase text-slate-900 tracking-tight">Response Recorded</h2>
+                        <p class="text-slate-500 mt-4 font-medium text-lg">Your decline has been securely logged.<br>You may now close this window.</p>
+                    `;
+                }
+                successContainer.classList.remove('hidden');
 
-    } catch (e) {
-        alert("Submission failed. Please try again.");
-        btn.disabled = false; btn.innerText = "Submit Final Response";
-    }
-}
+            } catch (e) {
+                alert("Submission failed. Please try again.");
+                btn.disabled = false; 
+                btn.innerText = "Submit Final Response";
+            }
+        }
 
         function buildMapsUrl(limit) {
             if (!window.payloadData || !window.payloadData.locs) return null;
