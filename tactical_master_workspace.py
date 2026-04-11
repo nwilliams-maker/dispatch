@@ -132,7 +132,7 @@ st.markdown(f"""
     
     div[data-testid="stMetricValue"] > div {{ color: #000000 !important; }}
     </style>
-""" unsafe_allow_html=True)
+""" ,unsafe_allow_html=True)
 
 # --- UTILITIES ---
 def haversine(lat1, lon1, lat2, lon2):
@@ -441,10 +441,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
         loc_pills[addr] = f"({counts['total']} Tasks) {pill_str}"
         
         # Display the UI with a resized purple badge and smaller task breakdown text
-        st.markdown(
-            f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{counts['total']} Tasks</span>&nbsp; <span style='font-size: 13px; color: #475569;'>— {pill_str}</span>", 
-            unsafe_allow_html=True
-        )
+        st.markdown(f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{counts['total']} Tasks</span>&nbsp; <span style='font-size: 13px; color: #475569;'>— {pill_str}</span>", unsafe_allow_html=True)
         
     st.divider()
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
