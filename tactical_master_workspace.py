@@ -98,16 +98,6 @@ st.markdown(f"""
     }}
 
     /* EMBEDDED SYNC ICON HACK (Pulls button inside the card) */
-    div.element-container:has(button[key^="sync_track_"]) {{
-        margin-top: -125px !important; /* Pulls the button up into the white card */
-        height: 0px !important;        /* Prevents it from adding blank space below */
-        overflow: visible !important;
-        display: flex !important;
-        justify-content: flex-end !important;
-        padding-right: 15px !important;
-        position: relative !important;
-        z-index: 10 !important;
-    }}
     
     button[key^="sync_track_"] {{
         background: transparent !important;
@@ -675,9 +665,9 @@ def run_pod_tab(pod_name):
         """, unsafe_allow_html=True)
 
     with c3:
-        # 1. The Card Background (Drawn first)
+        # 1. The Supercard Background
         st.markdown(f"""
-            <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
+            <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:5px; height: 110px;'>
                 <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Dispatched Tracking: {total_dispatched}</p>
                 <div style='display:flex; justify-content:space-between; gap:8px;'>
                     <div style='background:{TB_GREEN_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
@@ -692,19 +682,42 @@ def run_pod_tab(pod_name):
             </div>
         """, unsafe_allow_html=True)
         
-        # 2. The Sync Button (Rendered second, but CSS pulls it UP inside the card!)
+        # 2. The CSS to specifically hijack this exact button and drag it UP into the card
+        st.markdown("""
+            <style>
+            /* Target the button using its exact hover 'help' text */
+            button[title="Force Sync Portal Accept/Declines"] {
+                position: absolute !important;
+                right: 15px !important;
+                margin-top: -110px !important; /* Pulls it up exactly into the top right corner */
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                font-size: 16px !important;
+                width: 30px !important;
+                height: 30px !important;
+                color: #94a3b8 !important;
+                z-index: 99 !important;
+                transition: transform 0.4s ease !important;
+            }
+            
+            /* Cool spin effect on hover */
+            button[title="Force Sync Portal Accept/Declines"]:hover {
+                transform: rotate(180deg) !important;
+                color: #000000 !important;
+            }
+            
+            /* Collapse the invisible container left behind so it doesn't mess up your spacing */
+            div[data-testid="stButton"]:has(button[title="Force Sync Portal Accept/Declines"]) {
+                height: 0px !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # 3. The Button itself (Rendered beneath the card, but visually pulled inside by the CSS)
         if st.button("🔄", key=f"sync_track_{pod_name}", help="Force Sync Portal Accept/Declines"):
             fetch_sent_records_from_sheet.clear()
             st.rerun()
-        
-    # MAP REMAINS UNTOUCHED
-    m = folium.Map(location=cls[0]['center'], zoom_start=6, tiles="cartodbpositron")
-    for c in ready: folium.CircleMarker(c['center'], radius=10, color=TB_GREEN, fill=True, opacity=0.8).add_to(m)
-    for c in sent: folium.CircleMarker(c['center'], radius=10, color="#3b82f6", fill=True, opacity=0.8).add_to(m)
-    for c in review: folium.CircleMarker(c['center'], radius=10, color="#ef4444", fill=True, opacity=0.8).add_to(m)
-    st_folium(m, width=1100, height=400, key=f"map_{pod_name}")
-    
-    st.markdown("---")
 
     # TABS REMAIN UNTOUCHED
     t1, t2, t3, gap, t4, t5, end_gap = st.tabs([
