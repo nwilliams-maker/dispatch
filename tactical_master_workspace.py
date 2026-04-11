@@ -128,6 +128,18 @@ label, div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-wei
 .stButton>button:hover {{ filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); color: #ffffff !important; }}
 
 div[data-testid="stMetricValue"] > div {{ color: #000000 !important; }}
+
+/* MAP CONTAINER CLEANUP */
+    iframe[title="streamlit_folium.st_folium"] {{
+        border-radius: 15px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+        background-color: transparent !important;
+    }}
+    
+    /* Prevents the 'black box' flicker on refresh */
+    .stFolium {{
+        background: transparent !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -651,12 +663,19 @@ def run_pod_tab(pod_name):
             </div>
         """, unsafe_allow_html=True)
 
+    # --- MAP RENDERING (STAYS RIGHT BELOW) ---
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # We use the first cluster as the center point
     m = folium.Map(location=cls[0]['center'], zoom_start=6, tiles="cartodbpositron")
-    for c in ready: folium.CircleMarker(c['center'], radius=10, color=TB_GREEN, fill=True, opacity=0.8).add_to(m)
-    for c in sent: folium.CircleMarker(c['center'], radius=10, color="#3b82f6", fill=True, opacity=0.8).add_to(m)
-    for c in review: folium.CircleMarker(c['center'], radius=10, color="#ef4444", fill=True, opacity=0.8).add_to(m)
-    st_folium(m, width=1100, height=400, key=f"map_{pod_name}")
+    
+    # Draw markers
+    for c in ready: folium.CircleMarker(c['center'], radius=8, color=TB_GREEN, fill=True, opacity=0.8).add_to(m)
+    for c in sent: folium.CircleMarker(c['center'], radius=8, color="#3b82f6", fill=True, opacity=0.8).add_to(m)
+    for c in review: folium.CircleMarker(c['center'], radius=8, color="#ef4444", fill=True, opacity=0.8).add_to(m)
+    
+    # FIX: Remove width=1100 and use container width for responsiveness
+    st_folium(m, height=400, use_container_width=True, key=f"map_{pod_name}")
 
     st.markdown("---")
 
