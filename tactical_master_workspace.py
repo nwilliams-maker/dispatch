@@ -70,24 +70,28 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 15px; }}
     .stTabs [data-baseweb="tab"] {{ border-radius: 10px !important; padding: 10px 20px !important; font-weight: 700 !important; }}
 
-    /* POD HEADER SYNC BUTTON */
+    /* MODERN MINIMALIST SYNC ICON */
     button[title="Sync Pod Status"] {{
-        background-color: transparent !important;
+        background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        color: #64748b !important;
-        font-size: 18px !important;
-        font-weight: 900 !important;
+        color: #94a3b8 !important; /* Modern Muted Slate */
+        font-size: 22px !important;
+        font-weight: 400 !important;
         padding: 0 !important;
-        float: right !important;
-        transition: transform 0.4s ease, color 0.2s ease !important;
+        margin-top: 12px !important; /* Aligns vertically with H2 text */
+        transition: all 0.3s ease !important;
+        min-height: 0 !important;
+        width: 30px !important;
+        height: 30px !important;
     }}
 
     button[title="Sync Pod Status"]:hover {{
+        color: #633094 !important; /* TB_PURPLE on hover */
         transform: rotate(180deg) !important;
-        color: #000000 !important;
-        background-color: transparent !important;
+        background: transparent !important;
     }}
+    
     /* TOP LEVEL TABS (Pod Colors) */
     .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ background-color: #ffffff !important; color: #000000 !important; }}
     .stTabs [data-baseweb="tab"]:nth-of-type(2) {{ background-color: #dbeafe !important; color: #000000 !important; }}
@@ -570,18 +574,24 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         st.rerun()
                 
 def run_pod_tab(pod_name):
-    # Create a header row for the title and the local refresh icon
-    head_col1, head_col2 = st.columns([0.9, 0.1])
+    # This creates a tight horizontal container for the Title + Icon
+    # We use a 'gap' parameter to keep them close together
+    title_col, sync_col = st.columns([0.42, 0.58])
     
-    with head_col1:
-        st.markdown(f"<h2 style='text-align:center; margin-left: 10%;'>{pod_name} Dashboard</h2>", unsafe_allow_html=True)
+    with title_col:
+        st.markdown(f"<h2 style='text-align:right; margin-bottom:0;'>{pod_name} Dashboard</h2>", unsafe_allow_html=True)
     
-    with head_col2:
+    with sync_col:
+        # The icon is placed right after the title
         if st.button("↻", key=f"sync_pod_{pod_name}", help="Sync Pod Status", type="tertiary"):
             fetch_sent_records_from_sheet.clear()
             st.rerun()
 
+    # Add a small vertical space before metrics
+    st.markdown("<br>", unsafe_allow_html=True)
+
     if f"clusters_{pod_name}" not in st.session_state:
+        # ... rest of your existing initialization logic
         
         # ... rest of your initialization logic
         if st.button(f"🚀 Initialize {pod_name} Data", key=f"init_{pod_name}"):
