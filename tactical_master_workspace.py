@@ -79,6 +79,24 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"]:nth-of-type(6) {{ background-color: #fee2e2 !important; color: #000000 !important; }}
     .stTabs [aria-selected="true"] {{ transform: scale(1.05); border: 2px solid {TB_PURPLE} !important; z-index: 1; }}
 
+    /* TARGET THE GMAIL (PRIMARY) BUTTON SPECIFICALLY */
+    button[kind="primary"] {
+        background-color: #76bc21 !important; /* TB_GREEN */
+        color: white !important;
+        height: 3.5rem !important; /* Makes it larger */
+        font-size: 1.2rem !important;
+        font-weight: 800 !important;
+        border: none !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    button[kind="primary"]:hover {
+        filter: brightness(1.1) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 10px rgba(0,0,0,0.15) !important;
+    }
+    
     /* NESTED SUB-TABS OVERRIDE (Pipeline & Portal Results) */
     div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(1) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }} /* Ready */
     div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(2) {{ background-color: {TB_BLUE_FILL} !important; color: #000000 !important; }} /* Sent */
@@ -481,31 +499,26 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         if real_id:
             gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={ic['Email']}&su=Route Request: {ic['Name']}&body={requests.utils.quote(sig)}"
             
-            if st.button("🚀 OPEN IN GMAIL", key=f"gbtn_{cluster_hash}"):
-                # 1. Capture the timestamp immediately
+            # This button will now be large and Green due to the CSS above
+            if st.button("🚀 OPEN IN GMAIL", type="primary", key=f"gbtn_{cluster_hash}"):
+                # 1. Capture the timestamp and move state
                 now_ts = datetime.now().strftime('%m/%d %I:%M %p')
                 st.session_state[f"sent_ts_{cluster_hash}"] = now_ts
                 st.session_state[f"contractor_{cluster_hash}"] = ic['Name']
                 
-                # 2. Open Gmail and ONLY THEN trigger the rerun via JS
-                # This prevents Streamlit from killing the window.open process
+                # 2. Open Gmail in a new tab via Javascript
                 st.components.v1.html(
                     f"""
                     <script>
-                        var win = window.open('{gmail_url}', '_blank');
-                        if (win) {{
-                            win.focus();
-                            setTimeout(function() {{
-                                window.parent.location.reload();
-                            }}, 500);
-                        }} else {{
-                            alert('Please allow popups for this site to open Gmail');
-                        }}
+                        window.open('{gmail_url}', '_blank');
                     </script>
                     """,
                     height=0,
                 )
-                # We remove the python st.rerun() because the JS above handles it after the popup clears
+                
+                # 3. Small pause to allow JS to fire, then rerun to move card
+                time.sleep(0.5)
+                st.rerun()
 
 def run_pod_tab(pod_name):
     st.markdown(f"<h2 style='text-align:center;'>{pod_name} Dashboard</h2>", unsafe_allow_html=True)
