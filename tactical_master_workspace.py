@@ -153,25 +153,19 @@ def fetch_sent_records_from_sheet():
         df.columns = [str(c).strip().lower() for c in df.columns]
         
         sent_dict = {}
-        if 'json payload' in df.columns:
-            for payload_str in df['json payload'].dropna():
-                try:
-                    p = json.loads(payload_str)
-                    tids = p.get('taskIds', '')
-                    contractor_name = p.get('icn', 'Unknown Contractor')
-                    if tids:
-                        for tid in str(tids).replace('|', ',').split(','):
-                            if tid.strip():
-                                sent_dict[tid.strip()] = contractor_name
-                except: continue
+        # Find the column that tracks the portal response
+        status_col = next((c for c in df.columns if 'status' in c), None)
         
-        if 'taskids' in df.columns and not sent_dict:
-            for idx, row in df.iterrows():
+        if 'taskids' in df.columns:
+            for _, row in df.iterrows():
                 tids = str(row.get('taskids', '')).replace('|', ',').split(',')
                 c_name = row.get('contractor', row.get('icn', 'Unknown Contractor'))
+                # If no status col exists yet, we assume it's just 'Sent'
+                c_status = str(row.get(status_col, 'Sent')).strip() if status_col else 'Sent'
+                
                 for tid in tids:
-                    if tid.strip() and tid.strip() not in sent_dict:
-                        sent_dict[tid.strip()] = c_name
+                    if tid.strip():
+                        sent_dict[tid.strip()] = {"name": c_name, "status": c_status}
                         
         return sent_dict
     except Exception as e:
@@ -549,22 +543,19 @@ def run_pod_tab(pod_name):
         task_ids = [str(t['id']).strip() for t in c['data']]
         cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
         
-        matched_contractors = [sent_db[tid] for tid in task_ids if tid in sent_db]
+        # Check sheet data
+        sheet_match = next((sent_db[tid] for tid in task_ids if tid in sent_db), None)
         local_sent_name = st.session_state.get(f"contractor_{cluster_hash}")
         
-        # Check for Portal Status (This assumes your GAS Sheet has a way to track Accept/Decline)
-        # For now, we move them to 'Sent' first, then we can sub-filter
-        if matched_contractors or local_sent_name:
-            c['contractor_name'] = matched_contractors[0] if matched_contractors else local_sent_name
+        if sheet_match or local_sent_name:
+            c['contractor_name'] = sheet_match['name'] if sheet_match else local_sent_name
             
-            # --- NEW: Portal Status Logic ---
-            # If your sheet tracking includes status, we sort here:
-            # (Note: This logic depends on your portal writing 'Accepted' or 'Declined' to the sheet)
-            status_check = str(c.get('portal_status', '')).lower() 
+            # Logic: Sheet status beats local session status
+            current_status = sheet_match['status'].lower() if sheet_match else "sent"
             
-            if "accept" in status_check:
+            if "accept" in current_status:
                 accepted.append(c)
-            elif "decline" in status_check:
+            elif "decline" in current_status:
                 declined.append(c)
             else:
                 sent.append(c)
