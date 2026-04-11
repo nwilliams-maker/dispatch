@@ -549,7 +549,6 @@ def run_pod_tab(pod_name):
             process_pod(pod_name)
             st.rerun()
         return
-    
     cls = st.session_state[f"clusters_{pod_name}"]
     if not cls:
         st.info(f"No tasks pending in the {pod_name} region.")
