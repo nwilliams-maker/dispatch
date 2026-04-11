@@ -532,27 +532,32 @@ def run_pod_tab(pod_name):
         cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
         
         sheet_match = sent_db.get(next((tid for tid in task_ids if tid in sent_db), None))
-        local_sent_name = st.session_state.get(f"contractor_{cluster_hash}")
         local_ts = st.session_state.get(f"sent_ts_{cluster_hash}", "")
         
-        if sheet_match or local_sent_name:
-            c['contractor_name'] = sheet_match.get('name', 'Unknown') if sheet_match else local_sent_name
-            sheet_time = sheet_match.get('time', '') if sheet_match else ""
-            c['route_ts'] = sheet_time if sheet_time else local_ts
+        if sheet_match:
+            c['contractor_name'] = sheet_match.get('name', 'Unknown')
+            c['route_ts'] = sheet_match.get('time', '') or local_ts
             
-            # --- THE SMART STATUS LOGIC ---
-            # 1. Start with what the Google Sheet says
-            current_status = sheet_match.get('status', 'sent') if sheet_match else "sent"
+            # Identify the raw status from the sheet
+            raw_status = sheet_match.get('status')
             
-            # 2. If it was declined, check if we've actually clicked "Open in Gmail" yet
-            if current_status == "declined":
-                # Only move it to "sent" if we have a local timestamp (meaning Gmail button was clicked)
+            # Logic: If it's declined, ONLY move to sent if Gmail was actually clicked
+            if raw_status == "declined":
                 if local_ts:
-                    current_status = "sent"
+                    sent.append(c) # Moves to Sent tab
+                else:
+                    declined.append(c) # Stays in Declined tab
+            elif raw_status == "accepted":
+                accepted.append(c)
+            else:
+                sent.append(c)
+        
+        # If not in the sheet but we have a local_ts, it was just sent from 'Ready'
+        elif local_ts:
+            c['contractor_name'] = st.session_state.get(f"contractor_{cluster_hash}", "Unknown")
+            c['route_ts'] = local_ts
+            sent.append(c)
             
-            if current_status == "accepted": accepted.append(c)
-            elif current_status == "declined": declined.append(c)
-            else: sent.append(c)
         else:
             if c.get('status') == "Ready": ready.append(c)
             else: review.append(c)
