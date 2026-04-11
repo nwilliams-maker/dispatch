@@ -463,10 +463,15 @@ def run_pod_tab(pod_name):
             if c.get('status') == "Ready": ready.append(c)
             else: review.append(c)
     
-    c1, c2, c3, c4 = st.columns([1,1,1, 1.2])
-    for col, title, val in zip([c1, c2, c3], ["Ready", "Sent", "Flagged"], [len(ready), len(sent), len(review)]):
+    c1, c2, c3, c4, c5 = st.columns([1,1,1,1, 1.2])
+    
+    # ---> NEW: Calculate total individual tasks utilized for this pod <---
+    total_tasks = sum(len(c['data']) for c in cls)
+    
+    for col, title, val in zip([c1, c2, c3, c4], ["Total Tasks", "Ready", "Sent", "Flagged"], [total_tasks, len(ready), len(sent), len(review)]):
         
-        if title == "Ready": bg_color = TB_GREEN_FILL
+        if title == "Total Tasks": bg_color = "#f8fafc" # Clean light gray
+        elif title == "Ready": bg_color = TB_GREEN_FILL
         elif title == "Sent": bg_color = TB_BLUE_FILL
         else: bg_color = TB_RED_FILL
         
@@ -477,7 +482,7 @@ def run_pod_tab(pod_name):
             </div>
         """, unsafe_allow_html=True)
     
-    with c4:
+    with c5:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄 Sync Sent Routes", use_container_width=True, key=f"sync_sheet_{pod_name}"):
             bar = st.progress(0, text="🔄 Fetching database records...")
