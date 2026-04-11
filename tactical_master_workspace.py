@@ -431,9 +431,9 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
         if counts['new'] > 0: pill_parts.append(f"🆕 {counts['new']} New Ad")
         if counts['cont'] > 0: pill_parts.append(f"🔄 {counts['cont']} Continuity")
         if counts['def'] > 0: pill_parts.append(f"⚪ {counts['def']} Default")
-        if counts['install'] > 0: pill_parts.append(f"🛠️ {counts['install']} Install")
+        if counts['install'] > 0: pill_parts.append(f"🛠️ {counts['install']} Kiosk Install")
         if counts['removal'] > 0: pill_parts.append(f"🛑 {counts['removal']} Kiosk Removal")
-        if counts['digital'] > 0: pill_parts.append(f"📱 {counts['digital']} Digital")
+        if counts['digital'] > 0: pill_parts.append(f"📱 {counts['digital']} Digital Service")
         if counts['other'] > 0: pill_parts.append(f"📦 {counts['other']} Other")
         
         # Build the clean string without brackets for the Google Sheet payload
