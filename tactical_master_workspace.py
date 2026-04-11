@@ -398,52 +398,48 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
     
     st.write("### 📍 Route Stops")
     
-    loc_data = {}
+    stop_metrics = {}
     for c in cluster['data']:
         addr = c['full']
-        if addr not in loc_data:
-            loc_data[addr] = {'total': 0, 'new': 0, 'cont': 0, 'def': 0, 'install': 0, 'removal': 0, 'digital': 0, 'other': 0}
+        if addr not in stop_metrics:
+            stop_metrics[addr] = {'t_count': 0, 'n_ad': 0, 'c_ad': 0, 'd_ad': 0, 'inst': 0, 'remov': 0, 'digi': 0, 'oth': 0}
         
-        loc_data[addr]['total'] += 1
+        stop_metrics[addr]['t_count'] += 1
         tt = str(c.get('task_type', '')).strip().lower()
         
-        # Categorize strictly using IF/ELIF
-        # Blank tasks (not tt) and "location in venue incorrect" now map to New Ad
         if not tt or any(x in tt for x in ["new ad", "digital ad with bottom", "digital ad with magnet", "art change", "location in venue incorrect", "top"]):
-            loc_data[addr]['new'] += 1
+            stop_metrics[addr]['n_ad'] += 1
         elif any(x in tt for x in ["continuity", "move kiosk", "photo retake", "swap magnets", "reorder", "fix", "digital photo", "photo"]):
-            loc_data[addr]['cont'] += 1
+            stop_metrics[addr]['c_ad'] += 1
         elif any(x in tt for x in ["default", "store default", "default ad", "ad takedown", "pull down"]):
-            loc_data[addr]['def'] += 1
+            stop_metrics[addr]['d_ad'] += 1
         elif any(x in tt for x in ["kiosk install", "install"]): 
-            loc_data[addr]['install'] += 1
+            stop_metrics[addr]['inst'] += 1
         elif any(x in tt for x in ["kiosk removal", "cvs kiosk removal"]): 
-            loc_data[addr]['removal'] += 1
+            stop_metrics[addr]['remov'] += 1
         elif any(x in tt for x in ["digital service", "digital ins/remove", "service kiosk"]): 
-            loc_data[addr]['digital'] += 1
+            stop_metrics[addr]['digi'] += 1
         else:
-            loc_data[addr]['other'] += 1
+            stop_metrics[addr]['oth'] += 1
 
-    # Render the perfectly formatted Pills!
     loc_pills = {} 
-    for addr, counts in loc_data.items():
+    for addr, metrics in stop_metrics.items():
         pill_parts = []
-        if counts['new'] > 0: pill_parts.append(f"🆕 {counts['new']} New Ad")
-        if counts['cont'] > 0: pill_parts.append(f"🔄 {counts['cont']} Continuity")
-        if counts['def'] > 0: pill_parts.append(f"⚪ {counts['def']} Default")
-        if counts['install'] > 0: pill_parts.append(f"🛠️ {counts['install']} Kiosk Install")
-        if counts['removal'] > 0: pill_parts.append(f"🛑 {counts['removal']} Kiosk Removal")
-        if counts['digital'] > 0: pill_parts.append(f"📱 {counts['digital']} Digital Service")
-        if counts['other'] > 0: pill_parts.append(f"📦 {counts['other']} Other")
+        if metrics['n_ad'] > 0: pill_parts.append(f"🆕 {metrics['n_ad']} New Ad")
+        if metrics['c_ad'] > 0: pill_parts.append(f"🔄 {metrics['c_ad']} Continuity")
+        if metrics['d_ad'] > 0: pill_parts.append(f"⚪ {metrics['d_ad']} Default")
+        if metrics['inst'] > 0: pill_parts.append(f"🛠️ {metrics['inst']} Kiosk Install")
+        if metrics['remov'] > 0: pill_parts.append(f"🛑 {metrics['remov']} Kiosk Removal")
+        if metrics['digi'] > 0: pill_parts.append(f"📱 {metrics['digi']} Digital Service")
+        if metrics['oth'] > 0: pill_parts.append(f"📦 {metrics['oth']} Other")
         
-        # Build the clean string without brackets for the Google Sheet payload
         pill_str = " | ".join(pill_parts)
-        loc_pills[addr] = f"({counts['total']} Tasks) {pill_str}"
+        loc_pills[addr] = f"({metrics['t_count']} Tasks) {pill_str}"
         
-        # Display the UI with a resized purple badge and smaller task breakdown text
-        st.markdown(f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{counts['total']} Tasks</span>&nbsp; <span style='font-size: 13px; color: #475569;'>— {pill_str}</span>", unsafe_allow_html=True)
+        st.markdown(f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{metrics['t_count']} Tasks</span>&nbsp; <span style='font-size: 13px; color: #475569;'>— {pill_str}</span>", unsafe_allow_html=True)
         
     st.divider()
+    
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy()
     
