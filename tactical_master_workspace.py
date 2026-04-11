@@ -473,7 +473,6 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     col1, col2 = st.columns(2)
     
     with col1:
-        # If it's a declined route, we ALLOW generating a new link (Fresh Start)
         if not real_id or is_declined:
             btn_text = "🔄 Generate New Link" if is_declined else "☁️ Push & Generate Link"
             if st.button(btn_text, key=f"btn_s_{pod_name}_{i}_{cluster_hash}"):
@@ -489,8 +488,10 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
                 
                 res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
                 if res.get("success"):
-                    st.session_state[sync_key] = res.get("routeId") # Re-links to NEW Route ID
-                    # Removed the "move to sent" override from here so it waits for you.
+                    st.session_state[sync_key] = res.get("routeId")
+                    
+                    # 🔒 NEW: Set the UI lock before rerunning!
+                    st.session_state[f"ui_lock_{cluster_hash}"] = "declined" if is_declined else "ready"
                     st.rerun()
         else:
             st.button("✅ Link Generated", disabled=True, key=f"dis_{pod_name}_{i}_{cluster_hash}")
@@ -499,14 +500,15 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         if real_id:
             gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={ic['Email']}&su=Route Request: {ic['Name']}&body={requests.utils.quote(sig)}"
             
-            # This button will now be large and Green due to the CSS above
             if st.button("🚀 OPEN IN GMAIL", type="primary", key=f"gbtn_{cluster_hash}"):
-                # 1. Capture the timestamp and move state
                 now_ts = datetime.now().strftime('%m/%d %I:%M %p')
                 st.session_state[f"sent_ts_{cluster_hash}"] = now_ts
                 st.session_state[f"contractor_{cluster_hash}"] = ic['Name']
                 
-                # 2. Open Gmail in a new tab via Javascript
+                # 🔓 NEW: Remove the UI lock so the card can finally move to Sent!
+                if f"ui_lock_{cluster_hash}" in st.session_state:
+                    del st.session_state[f"ui_lock_{cluster_hash}"]
+                
                 st.components.v1.html(
                     f"""
                     <script>
@@ -515,8 +517,6 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
                     """,
                     height=0,
                 )
-                
-                # 3. Small pause to allow JS to fire, then rerun to move card
                 time.sleep(0.5)
                 st.rerun()
 
@@ -546,6 +546,7 @@ def run_pod_tab(pod_name):
         
         sheet_match = sent_db.get(next((tid for tid in task_ids if tid in sent_db), None))
         local_ts = st.session_state.get(f"sent_ts_{cluster_hash}", "")
+        ui_lock = st.session_state.get(f"ui_lock_{cluster_hash}") # 🔒 CHECK FOR LOCK
         
         if sheet_match:
             c['contractor_name'] = sheet_match.get('name', 'Unknown')
@@ -554,26 +555,41 @@ def run_pod_tab(pod_name):
             # Identify the raw status from the sheet
             raw_status = sheet_match.get('status')
             
-            # Logic: If it's declined, ONLY move to sent if Gmail was actually clicked
-            if raw_status == "declined":
-                if local_ts:
-                    sent.append(c) # Moves to Sent tab
-                else:
-                    declined.append(c) # Stays in Declined tab
-            elif raw_status == "accepted":
-                accepted.append(c)
+            # 🔒 OVERRIDE: If the card is locked, keep it exactly where it was
+            if ui_lock == "declined":
+                declined.append(c)
+            elif ui_lock == "ready":
+                ready.append(c)
+            # 🔓 NORMAL LOGIC: If no lock, behave normally
             else:
-                sent.append(c)
+                if raw_status == "declined":
+                    if local_ts:
+                        sent.append(c) # Moves to Sent tab
+                    else:
+                        declined.append(c) # Stays in Declined tab
+                elif raw_status == "accepted":
+                    accepted.append(c)
+                else:
+                    sent.append(c)
         
         # If not in the sheet but we have a local_ts, it was just sent from 'Ready'
         elif local_ts:
             c['contractor_name'] = st.session_state.get(f"contractor_{cluster_hash}", "Unknown")
             c['route_ts'] = local_ts
-            sent.append(c)
+            
+            # Lock check here too just in case
+            if ui_lock == "ready":
+                ready.append(c)
+            else:
+                sent.append(c)
             
         else:
-            if c.get('status') == "Ready": ready.append(c)
-            else: review.append(c)
+            if ui_lock == "ready":
+                ready.append(c)
+            elif c.get('status') == "Ready": 
+                ready.append(c)
+            else: 
+                review.append(c)
 
     # --- NEW NESTED METRIC LAYOUT ---
     total_tasks = sum(len(c['data']) for c in cls)
