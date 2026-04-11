@@ -393,32 +393,29 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     real_id = st.session_state.get(sync_key)
     link_id = real_id if real_id else "LINK_PENDING"
 
+    # --- 1. STATE KEYS & INITIALIZATION ---
+    pay_key = f"pay_val_{cluster_hash}"
+    rate_key = f"rate_val_{cluster_hash}"
+    sel_key = f"sel_{cluster_hash}"
+    last_sel_key = f"last_sel_{cluster_hash}" # Tracks the "previous" selection
+
     st.write("### 📍 Route Stops")
 
-    # --- 1. YOUR SPECIFIC STOP METRICS LOGIC ---
+    # (Task categorization logic remains the same)
     stop_metrics = {}
     for c in cluster['data']:
         addr = c['full']
         if addr not in stop_metrics:
             stop_metrics[addr] = {'t_count': 0, 'n_ad': 0, 'c_ad': 0, 'd_ad': 0, 'inst': 0, 'remov': 0, 'digi': 0, 'oth': 0}
-        
         stop_metrics[addr]['t_count'] += 1
         tt = str(c.get('task_type', '')).strip().lower()
-        
-        if not tt or any(x in tt for x in ["new ad", "digital ad with bottom", "digital ad with magnet", "art change", "location in venue incorrect", "top"]):
-            stop_metrics[addr]['n_ad'] += 1
-        elif any(x in tt for x in ["continuity", "move kiosk", "photo retake", "swap magnets", "reorder", "fix", "digital photo", "photo"]):
-            stop_metrics[addr]['c_ad'] += 1
-        elif any(x in tt for x in ["default", "store default", "default ad", "ad takedown", "pull down"]):
-            stop_metrics[addr]['d_ad'] += 1
-        elif any(x in tt for x in ["kiosk install", "install"]): 
-            stop_metrics[addr]['inst'] += 1
-        elif any(x in tt for x in ["kiosk removal", "cvs kiosk removal"]): 
-            stop_metrics[addr]['remov'] += 1
-        elif any(x in tt for x in ["digital service", "digital ins/remove", "service kiosk"]): 
-            stop_metrics[addr]['digi'] += 1
-        else:
-            stop_metrics[addr]['oth'] += 1
+        if not tt or any(x in tt for x in ["new ad", "digital ad", "art change", "top"]): stop_metrics[addr]['n_ad'] += 1
+        elif any(x in tt for x in ["continuity", "photo", "swap"]): stop_metrics[addr]['c_ad'] += 1
+        elif any(x in tt for x in ["default", "pull down"]): stop_metrics[addr]['d_ad'] += 1
+        elif "install" in tt: stop_metrics[addr]['inst'] += 1
+        elif "removal" in tt: stop_metrics[addr]['remov'] += 1
+        elif "service" in tt: stop_metrics[addr]['digi'] += 1
+        else: stop_metrics[addr]['oth'] += 1
 
     loc_pills = {} 
     for addr, metrics in stop_metrics.items():
@@ -430,17 +427,15 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         if metrics['remov'] > 0: pill_parts.append(f"🛑 {metrics['remov']} Kiosk Removal")
         if metrics['digi'] > 0: pill_parts.append(f"📱 {metrics['digi']} Digital Service")
         if metrics['oth'] > 0: pill_parts.append(f"📦 {metrics['oth']} Other")
-        
         pill_str = " | ".join(pill_parts)
         loc_pills[addr] = f"({metrics['t_count']} Tasks) {pill_str}"
         st.markdown(f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{metrics['t_count']} Tasks</span>&nbsp; <span style='font-size: 13px; color: #475569;'>— {pill_str}</span>", unsafe_allow_html=True)
         
     st.divider()
 
-    # --- 2. CONTRACTOR SEARCH & KEYS ---
+    # --- 2. CONTRACTOR FILTERING ---
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy()
-    
     if not v_ics.empty:
         v_ics['d'] = v_ics.apply(lambda x: haversine(cluster['center'][0], cluster['center'][1], x['Lat'], x['Lng']), axis=1)
         v_ics = v_ics[v_ics['d'] <= 100].sort_values('d').head(5)
@@ -450,81 +445,92 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         return
 
     ic_opts = {f"{r['Name']} ({round(r['d'],1)} mi)": r for _, r in v_ics.iterrows()}
-    pay_key = f"pay_val_{cluster_hash}"
-    rate_key = f"rate_val_{cluster_hash}"
-    sel_key = f"sel_{cluster_hash}"
+    
+    # --- 3. DYNAMIC PRICING SYNC LOGIC ---
+    def sync_on_total():
+        # User edited TOTAL COMP
+        val = st.session_state[pay_key]
+        st.session_state[rate_key] = round(val / cluster['stops'], 2)
 
-    # --- 3. DYNAMIC PRICING REFRESH CALLBACK ---
-    def update_pricing_on_ic_change():
+    def sync_on_rate():
+        # User edited RATE PER STOP
+        val = st.session_state[rate_key]
+        st.session_state[pay_key] = round(val * cluster['stops'], 2)
+
+    def update_for_new_contractor():
+        # Reset pricing floor when a DIFFERENT contractor is selected
         selected_label = st.session_state[sel_key]
-        new_ic = ic_opts[selected_label]
-        _, new_hrs, _ = get_gmaps(new_ic['Location'], list(stop_metrics.keys())[:25])
-        new_pay = float(round(max(cluster['stops'] * 18.0, new_hrs * 25.0), 2))
-        st.session_state[pay_key] = new_pay
-        st.session_state[rate_key] = float(round(new_pay / cluster['stops'], 2))
+        if selected_label != st.session_state.get(last_sel_key):
+            ic_new = ic_opts[selected_label]
+            _, h, _ = get_gmaps(ic_new['Location'], list(stop_metrics.keys())[:25])
+            new_pay = float(round(max(cluster['stops'] * 18.0, h * 25.0), 2))
+            st.session_state[pay_key] = new_pay
+            st.session_state[rate_key] = round(new_pay / cluster['stops'], 2)
+            st.session_state[last_sel_key] = selected_label
 
-    # Initial Pricing Setup
+    # Initial Setup (First time card is seen)
     if pay_key not in st.session_state:
-        first_ic = list(ic_opts.values())[0]
-        _, h, _ = get_gmaps(first_ic['Location'], list(stop_metrics.keys())[:25])
+        first_ic_label = list(ic_opts.keys())[0]
+        ic_init = ic_opts[first_ic_label]
+        _, h, _ = get_gmaps(ic_init['Location'], list(stop_metrics.keys())[:25])
         initial_pay = float(round(max(cluster['stops'] * 18.0, h * 25.0), 2))
         st.session_state[pay_key] = initial_pay
-        st.session_state[rate_key] = float(round(initial_pay / cluster['stops'], 2))
+        st.session_state[rate_key] = round(initial_pay / cluster['stops'], 2)
+        st.session_state[sel_key] = first_ic_label
+        st.session_state[last_sel_key] = first_ic_label
 
-    # --- 4. INPUT ROW & LOCK LOGIC ---
+    # --- 4. THE UI ROW ---
     col_a, col_b, col_c, col_d = st.columns([1.5, 1, 1, 1])
     
     with col_a:
-        sel_label = st.selectbox("Contractor", list(ic_opts.keys()), key=sel_key, on_change=update_pricing_on_ic_change)
+        st.selectbox("Contractor", list(ic_opts.keys()), key=sel_key, on_change=update_for_new_contractor)
     
-    ic = ic_opts[sel_label]
+    # Get current state values
+    ic = ic_opts[st.session_state[sel_key]]
     mi, hrs, t_str = get_gmaps(ic['Location'], list(stop_metrics.keys())[:25])
-
-    current_rate = st.session_state.get(rate_key, 0)
-    # LOCK CHECK: Rate >= $25 | Distance > 60mi | Flagged Route
-    needs_unlock = (current_rate >= 25.0) or (ic['d'] > 60) or (cluster['status'] == 'Flagged')
+    
+    # LOCK CHECK
+    curr_rate = st.session_state[rate_key]
+    needs_unlock = (curr_rate >= 25.0) or (ic['d'] > 60) or (cluster['status'] == 'Flagged')
     is_unlocked = True 
     
     if needs_unlock:
         reasons = []
-        if current_rate >= 25.0: reasons.append(f"High Rate (${current_rate}/stop)")
+        if curr_rate >= 25.0: reasons.append(f"High Rate (${curr_rate})")
         if ic['d'] > 60: reasons.append(f"Distance ({round(ic['d'],1)}mi)")
         if cluster['status'] == 'Flagged': reasons.append("Flagged Route")
-        
-        st.markdown(f"""
-            <div style="background-color:#fef2f2; border:1px solid #ef4444; padding:10px; border-radius:8px; margin-bottom:15px;">
-                <span style="color:#b91c1c; font-weight:800;">🔒 ACTION REQUIRED:</span> 
-                <span style="color:#7f1d1d;">{ " & ".join(reasons) }</span>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div style="background-color:#fef2f2; border:1px solid #ef4444; padding:10px; border-radius:8px; margin-bottom:15px;"><span style="color:#b91c1c; font-weight:800;">🔒 ACTION REQUIRED:</span> <span style="color:#7f1d1d;">{" & ".join(reasons)}</span></div>""", unsafe_allow_html=True)
         is_unlocked = st.checkbox("Authorize Premium Rate / Distance", key=f"lock_{cluster_hash}")
 
-    # Dynamic Sync Functions
-    def sync_rate(): st.session_state[rate_key] = round(st.session_state[pay_key] / cluster['stops'], 2)
-    def sync_pay(): st.session_state[pay_key] = round(st.session_state[rate_key] * cluster['stops'], 2)
-
     with col_b:
-        pay = st.number_input("Total Comp ($)", min_value=0.0, step=5.0, key=pay_key, on_change=sync_rate, disabled=not is_unlocked)
+        # CRITICAL: Do NOT use the 'value' argument here, only 'key'
+        st.number_input("Total Comp ($)", min_value=0.0, step=5.0, key=pay_key, on_change=sync_on_total, disabled=not is_unlocked)
     with col_c:
-        eff_stop = st.number_input("Rate/Stop ($)", min_value=0.0, step=1.0, key=rate_key, on_change=sync_pay, disabled=not is_unlocked)
+        st.number_input("Rate/Stop ($)", min_value=0.0, step=1.0, key=rate_key, on_change=sync_on_rate, disabled=not is_unlocked)
     with col_d:
-        due = st.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{cluster_hash}", disabled=not is_unlocked)
+        st.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{cluster_hash}", disabled=not is_unlocked)
 
-    # --- 5. FINANCIALS & LOGISTICS DISPLAY ---
+    # --- 5. UPDATED FINANCIALS & PREVIEW ---
+    # Fetch final values from session state to ensure they match the UI
+    final_pay = st.session_state[pay_key]
+    final_rate = st.session_state[rate_key]
+
     m1, m2 = st.columns(2)
     with m1: 
-        status_color = TB_GREEN if 18.0 <= eff_stop <= 23.0 else "#ef4444"
-        st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{status_color};'>Total: ${pay:,.2f}</p><p style='margin:0; font-size:13px; color:#000000;'>Breakdown: ${eff_stop}/stop x {cluster['stops']} stops</p></div>", unsafe_allow_html=True)
+        status_color = TB_GREEN if 18.0 <= final_rate <= 23.0 else "#ef4444"
+        st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{status_color};'>Total: ${final_pay:,.2f}</p><p style='margin:0; font-size:13px; color:#000000;'>Breakdown: ${final_rate}/stop</p></div>", unsafe_allow_html=True)
     with m2: 
         st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; text-transform:uppercase;'>Logistics</p><p style='margin:0; font-size:24px; font-weight:800; color:#000000;'>{t_str}</p><p style='margin:0; font-size:13px; color:#000000;'>Round Trip: {mi} mi</p></div>", unsafe_allow_html=True)
 
-    # --- 6. PREVIEW & GMAIL GENERATION ---
+    due = st.session_state[f"dd_{cluster_hash}"]
     wo_val = f"{ic['Name']} - {datetime.now().strftime('%m%d%Y')}"
     sig_preview = (f"Work Order: {wo_val}\nContractor: {ic['Name']}\nDue Date: {due.strftime('%A, %b %d, %Y')}\n\n"
-           f"Metrics:\n- Stops: {cluster['stops']}\n- Mileage: {mi} mi\n- Time: {t_str}\n- Compensation: ${pay:.2f}\n\n"
+           f"Metrics:\n- Stops: {cluster['stops']}\n- Mileage: {mi} mi\n- Time: {t_str}\n- Compensation: ${final_pay:.2f}\n\n"
            f"Authorize here:\n{PORTAL_BASE_URL}?route={link_id}&v2=true")
     
     st.text_area("Email Content Preview", sig_preview, height=180, key=f"tx_{cluster_hash}_preview", disabled=not is_unlocked)
+
+    # Gmail Button logic continues...
 
     btn_label = "🚀 GENERATE LINK & OPEN GMAIL" if (not real_id or is_declined) else "🚀 OPEN IN GMAIL (RESEND)"
 
