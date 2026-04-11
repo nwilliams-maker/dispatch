@@ -70,26 +70,35 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 15px; }}
     .stTabs [data-baseweb="tab"] {{ border-radius: 10px !important; padding: 10px 20px !important; font-weight: 700 !important; }}
 
-    /* MODERN MINIMALIST SYNC ICON */
+    /* MODERN INTEGRATED SYNC ICON */
     button[title="Sync Pod Status"] {{
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        color: #94a3b8 !important; /* Modern Muted Slate */
-        font-size: 22px !important;
-        font-weight: 400 !important;
+        color: #1e293b !important; /* Deep Slate (Dark) */
+        font-size: 24px !important;
+        font-weight: 900 !important;
         padding: 0 !important;
-        margin-top: 12px !important; /* Aligns vertically with H2 text */
-        transition: all 0.3s ease !important;
+        margin-top: 5px !important; 
+        /* Pull the icon leftward to sit right next to the centered title */
+        margin-left: -60% !important; 
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
         min-height: 0 !important;
-        width: 30px !important;
-        height: 30px !important;
-    }}
+        display: flex !important;
+        align-items: center !important;
+    }
 
     button[title="Sync Pod Status"]:hover {{
-        color: #633094 !important; /* TB_PURPLE on hover */
-        transform: rotate(180deg) !important;
+        color: #76bc21 !important; /* TB_GREEN Glow */
+        transform: rotate(180deg) scale(1.1) !important;
         background: transparent !important;
+    }
+
+    /* Target the inner span to ensure no Streamlit styling leaks through */
+    button[title="Sync Pod Status"] div[data-testid="stMarkdownContainer"] p {{
+        font-size: 24px !important;
+        font-weight: 900 !important;
+        color: inherit !important;
     }}
     
     /* TOP LEVEL TABS (Pod Colors) */
@@ -574,20 +583,24 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         st.rerun()
                 
 def run_pod_tab(pod_name):
-    # This creates a tight horizontal container for the Title + Icon
-    # We use a 'gap' parameter to keep them close together
-    title_col, sync_col = st.columns([0.42, 0.58])
+    # Centered Header with Icon
+    # Ratio [1, 2, 1] ensures the middle column is perfectly centered on the page
+    h_left, h_center, h_right = st.columns([1, 2, 1])
     
-    with title_col:
-        st.markdown(f"<h2 style='text-align:right; margin-bottom:0;'>{pod_name} Dashboard</h2>", unsafe_allow_html=True)
-    
-    with sync_col:
-        # The icon is placed right after the title
+    with h_center:
+        # We wrap the Title and Icon in a flex container to keep them side-by-side
+        st.markdown(f"""
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
+                <h2 style="margin: 0; white-space: nowrap;">{pod_name} Dashboard</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with h_right:
+        # The icon is placed here; CSS will pull it closer to the title
         if st.button("↻", key=f"sync_pod_{pod_name}", help="Sync Pod Status", type="tertiary"):
             fetch_sent_records_from_sheet.clear()
             st.rerun()
 
-    # Add a small vertical space before metrics
     st.markdown("<br>", unsafe_allow_html=True)
 
     if f"clusters_{pod_name}" not in st.session_state:
