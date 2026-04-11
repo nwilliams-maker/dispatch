@@ -634,7 +634,7 @@ def run_pod_tab(pod_name):
                         <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(ready)}</p>
                     </div>
                     <div style='background:{TB_BLUE_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
-                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>SENT</p>
+                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>SENT (PENDING)</p>
                         <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(sent)}</p>
                     </div>
                     <div style='background:{TB_RED_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
@@ -650,10 +650,6 @@ def run_pod_tab(pod_name):
             <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
                 <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Dispatched Tracking: {total_dispatched}</p>
                 <div style='display:flex; justify-content:space-between; gap:8px;'>
-                    <div style='background:{TB_BLUE_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
-                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>PENDING</p>
-                        <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(sent)}</p>
-                    </div>
                     <div style='background:{TB_GREEN_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
                         <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>ACCEPTED</p>
                         <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(accepted)}</p>
