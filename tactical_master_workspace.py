@@ -517,7 +517,7 @@ def run_pod_tab(pod_name):
         task_ids = [str(t['id']).strip() for t in c['data']]
         cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
         
-        sheet_match = next((sent_db.get(tid) for tid in task_ids if tid in sent_db), None)
+        sheet_match = sent_db.get(next((tid for tid in task_ids if tid in sent_db), None))
         local_sent_name = st.session_state.get(f"contractor_{cluster_hash}")
         local_ts = st.session_state.get(f"sent_ts_{cluster_hash}", "")
         
@@ -526,9 +526,15 @@ def run_pod_tab(pod_name):
             sheet_time = sheet_match.get('time', '') if sheet_match else ""
             c['route_ts'] = sheet_time if sheet_time else local_ts
             
-            current_status = st.session_state.get(f"status_override_{cluster_hash}")
-            if not current_status:
-                current_status = sheet_match.get('status', 'sent') if sheet_match else "sent"
+            # --- THE SMART STATUS LOGIC ---
+            # 1. Start with what the Google Sheet says
+            current_status = sheet_match.get('status', 'sent') if sheet_match else "sent"
+            
+            # 2. If it was declined, check if we've actually clicked "Open in Gmail" yet
+            if current_status == "declined":
+                # Only move it to "sent" if we have a local timestamp (meaning Gmail button was clicked)
+                if local_ts:
+                    current_status = "sent"
             
             if current_status == "accepted": accepted.append(c)
             elif current_status == "declined": declined.append(c)
