@@ -381,42 +381,40 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
     
     st.write("### 📍 Route Stops")
     
+    # ---> NEW: Count specific task types per location <---
     loc_data = {}
     for c in cluster['data']:
         addr = c['full']
         if addr not in loc_data:
-            loc_data[addr] = {'total': 0, 'new': 0, 'cont': 0, 'def': 0}
+            loc_data[addr] = {'total': 0, 'new': 0, 'cont': 0, 'def': 0, 'other': 0}
         
         loc_data[addr]['total'] += 1
         tt = str(c.get('task_type', '')).strip().lower()
         
-        # Categorize using IF/ELIF priority matching to completely prevent double-counting
-        if any(x in tt for x in ["new ad", "digital ad with bottom", "digital ad with magnet", "art change"]):
+        # Categorize strictly using your provided lists
+        if any(x in tt for x in ["new ad", "digital ad with bottom", "art change"]):
             loc_data[addr]['new'] += 1
         elif any(x in tt for x in ["continuity", "ad takedown", "move kiosk", "photo retake", "pull down", "swap magnets", "reorder", "fix", "digital photo", "photo"]):
             loc_data[addr]['cont'] += 1
         elif any(x in tt for x in ["default", "store default", "default ad"]):
             loc_data[addr]['def'] += 1
+        else:
+            loc_data[addr]['other'] += 1
 
-    # Render the new Pills!
-    loc_pills = {} # Saves the cleanly formatted string for the Google Sheet payload
+    # Render the perfectly formatted Pills!
+    loc_pills = {} 
     for addr, counts in loc_data.items():
         pill_parts = []
-        if counts['new'] > 0: pill_parts.append(f"🆕 {counts['new']} New")
-        if counts['cont'] > 0: pill_parts.append(f"🔄 {counts['cont']} Cont")
-        if counts['def'] > 0: pill_parts.append(f"⚪ {counts['def']} Def")
+        if counts['new'] > 0: pill_parts.append(f"🆕 {counts['new']} New Ad")
+        if counts['cont'] > 0: pill_parts.append(f"🔄 {counts['cont']} Continuity")
+        if counts['def'] > 0: pill_parts.append(f"⚪ {counts['def']} Default")
+        if counts['other'] > 0: pill_parts.append(f"📦 {counts['other']} Other")
         
-        # Ensure any unknown tasks are still accounted for mathematically in the pill
-        categorized_total = counts['new'] + counts['cont'] + counts['def']
-        if counts['total'] > categorized_total:
-            other_cnt = counts['total'] - categorized_total
-            pill_parts.append(f"📦 {other_cnt} Other")
-            
-        # The backticks are removed from pill_str so they don't break the Google Sheet payload
+        # Build the pill string cleanly without backticks
         pill_str = f"[ {' | '.join(pill_parts)} ]"
         loc_pills[addr] = pill_str
         
-        # We only apply the markdown backticks visually in the app
+        # Add the visual backticks only for the Streamlit UI
         st.markdown(f"**{addr}** `{pill_str}`")
         
     st.divider()
