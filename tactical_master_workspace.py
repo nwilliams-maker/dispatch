@@ -494,12 +494,12 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
                     "tCnt": len(task_ids),
                     "jobOnly": " | ".join([f"{a} {pill}" for a, pill in loc_pills.items()])
                 }
-               res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
+                res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
                 if res.get("success"):
                     st.session_state[sync_key] = res.get("routeId")
-                    # REMOVE the cluster['contractor_name'] line if it's here
                     st.rerun()
-        else: st.button("✅ Link Generated", disabled=True, key=f"dis_{pod_name}_{i}_{cluster_hash}")
+        else:
+            st.button("✅ Link Generated", disabled=True, key=f"dis_{pod_name}_{i}_{cluster_hash}")
     
    with col2:
         if real_id:
