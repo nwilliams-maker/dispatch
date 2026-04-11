@@ -417,6 +417,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
         else:
             loc_data[addr]['other'] += 1
 
+    # Render the perfectly formatted Pills!
     loc_pills = {} 
     for addr, counts in loc_data.items():
         pill_parts = []
@@ -425,9 +426,12 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
         if counts['def'] > 0: pill_parts.append(f"⚪ {counts['def']} Default")
         if counts['other'] > 0: pill_parts.append(f"📦 {counts['other']} Other")
         
+        # Build the pill string cleanly
         pill_str = f"[ {' | '.join(pill_parts)} ]"
         loc_pills[addr] = pill_str
-        st.markdown(f"**{addr}** `{pill_str}`")
+        
+        # Display as normal text (REMOVED the backticks so it doesn't get the dark green code styling)
+        st.markdown(f"**{addr}** {pill_str}")
         
     st.divider()
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
