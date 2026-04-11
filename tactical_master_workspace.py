@@ -57,7 +57,7 @@ headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()
 
 st.set_page_config(page_title="Dispatch Command Center", layout="wide")
 
-# --- UI STYLING ---
+# --- # --- UI STYLING ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
@@ -71,7 +71,7 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"] {{ border-radius: 10px !important; padding: 10px 20px !important; font-weight: 700 !important; }}
 
     /* MODERN INTEGRATED SYNC ICON */
-    button[title="Sync Pod Status"] {
+    button[title="Sync Pod Status"] {{
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -80,25 +80,17 @@ st.markdown(f"""
         font-weight: 900 !important;
         padding: 0 !important;
         margin-top: 5px !important; 
-        /* Pull the icon leftward to sit right next to the centered title */
         margin-left: -60% !important; 
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
         min-height: 0 !important;
         display: flex !important;
         align-items: center !important;
-    }
+    }}
 
-    button[title="Sync Pod Status"]:hover {
+    button[title="Sync Pod Status"]:hover {{
         color: #76bc21 !important; /* TB_GREEN Glow */
         transform: rotate(180deg) scale(1.1) !important;
         background: transparent !important;
-    }
-
-    /* Target the inner span to ensure no Streamlit styling leaks through */
-    button[title="Sync Pod Status"] div[data-testid="stMarkdownContainer"] p {{
-        font-size: 24px !important;
-        font-weight: 900 !important;
-        color: inherit !important;
     }}
 
     /* Target the inner span to ensure no Streamlit styling leaks through */
@@ -135,8 +127,7 @@ st.markdown(f"""
         box-shadow: 0 6px 10px rgba(0,0,0,0.15) !important;
     }}
 
-    /* EMBEDDED SYNC ICON HACK (Pulls button inside the card) */
-    
+    /* SYNC ICON HOVER */
     button[key^="sync_track_"] {{
         background: transparent !important;
         border: none !important;
@@ -154,14 +145,14 @@ st.markdown(f"""
         filter: brightness(0.5) !important;
     }}
     
-    /* NESTED SUB-TABS OVERRIDE (Pipeline & Portal Results) */
-    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(1) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }} /* Ready */
-    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(2) {{ background-color: {TB_BLUE_FILL} !important; color: #000000 !important; }} /* Sent */
-    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(3) {{ background-color: {TB_RED_FILL} !important; color: #000000 !important; }} /* Flagged */
-    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(5) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }} /* Accepted */
-    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(6) {{ background-color: {TB_RED_FILL} !important; color: #000000 !important; }} /* Declined */
+    /* NESTED SUB-TABS OVERRIDE */
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(1) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }}
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(2) {{ background-color: {TB_BLUE_FILL} !important; color: #000000 !important; }}
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(3) {{ background-color: {TB_RED_FILL} !important; color: #000000 !important; }}
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(5) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }}
+    div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(6) {{ background-color: {TB_RED_FILL} !important; color: #000000 !important; }}
 
-    /* FORCE EXPANDER CARDS PURE WHITE */
+    /* CARDS & INPUTS */
     div[data-testid="stExpander"],
     div[data-testid="stExpander"] > details,
     div[data-testid="stExpander"] > details > summary,
@@ -172,7 +163,6 @@ st.markdown(f"""
     div[data-testid="stExpander"] {{ border: 1px solid #cbd5e1 !important; border-radius: 15px !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; }}
     div[data-testid="stExpander"] details summary p {{ color: #000000 !important; font-weight: 800 !important; }}
     
-    /* FORCE TEXT AREA AND INPUTS PURE WHITE WITH BLACK TEXT */
     div[data-baseweb="select"] > div, 
     div[data-testid="stNumberInput"] input, 
     div[data-testid="stDateInput"] input,
@@ -187,7 +177,7 @@ st.markdown(f"""
     
     div[data-testid="stMetricValue"] > div {{ color: #000000 !important; }}
     </style>
-""" ,unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # --- UTILITIES ---
 def haversine(lat1, lon1, lat2, lon2):
