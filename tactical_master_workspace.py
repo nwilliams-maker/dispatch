@@ -508,7 +508,7 @@ def run_pod_tab(pod_name):
             process_pod(pod_name); st.rerun()
         return
     
-    # 1. NEW AUTO-SYNC: Fetch the DB silently in the background
+    # --- KEEPING THE CLEAN AUTO-SYNC LOGIC ---
     sent_db = fetch_sent_records_from_sheet()
     
     ready, review, sent, accepted, declined = [], [], [], [], []
@@ -536,25 +536,71 @@ def run_pod_tab(pod_name):
         else:
             if c.get('status') == "Ready": ready.append(c)
             else: review.append(c)
-    
-    # 2. METRIC CARDS: Perfectly balanced 6-column layout
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
+
+    # --- NEW NESTED METRIC LAYOUT ---
     total_tasks = sum(len(c['data']) for c in cls)
+    total_stops = sum(c['stops'] for c in cls)
+    total_routes = len(cls)
+    total_dispatched = len(sent) + len(accepted) + len(declined)
+
+    c1, c2, c3 = st.columns([1, 1.5, 1.5])
     
-    # We removed the manual Sync button and replaced it with a clean metric loop
-    for col, title, val in zip([c1, c2, c3, c4, c5, c6], 
-                               ["Total Tasks", "Ready", "Sent", "Flagged", "Accepted", "Declined"], 
-                               [total_tasks, len(ready), len(sent), len(review), len(accepted), len(declined)]):
-                               
-        if title == "Total Tasks": bg_color = "#f8fafc"
-        elif title in ["Ready", "Accepted"]: bg_color = TB_GREEN_FILL
-        elif title == "Sent": bg_color = TB_BLUE_FILL
-        else: bg_color = TB_RED_FILL
-        
-        col.markdown(f"""
-            <div style='background:{bg_color}; border:1px solid #cbd5e1; border-radius:12px; padding:15px; text-align:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px;'>
-                <p style='margin:0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>{title}</p>
-                <p style='margin:0; font-size:26px; font-weight:800; color:#000000;'>{val}</p>
+    with c1:
+        st.markdown(f"""
+            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
+                <div style='display:flex; justify-content:space-around; text-align:center; height:100%; align-items:center;'>
+                    <div>
+                        <p style='margin:0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Total Tasks</p>
+                        <p style='margin:0; font-size:26px; font-weight:800; color:#000000;'>{total_tasks}</p>
+                    </div>
+                    <div style='border-left: 2px solid #cbd5e1; height: 40px;'></div>
+                    <div>
+                        <p style='margin:0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase;'>Total Stops</p>
+                        <p style='margin:0; font-size:26px; font-weight:800; color:#000000;'>{total_stops}</p>
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with c2:
+        st.markdown(f"""
+            <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
+                <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Total Routes: {total_routes}</p>
+                <div style='display:flex; justify-content:space-between; gap:8px;'>
+                    <div style='background:{TB_GREEN_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
+                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>READY</p>
+                        <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(ready)}</p>
+                    </div>
+                    <div style='background:{TB_BLUE_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
+                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>SENT</p>
+                        <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(sent)}</p>
+                    </div>
+                    <div style='background:{TB_RED_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
+                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>FLAGGED</p>
+                        <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(review)}</p>
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+            <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
+                <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Dispatched Tracking: {total_dispatched}</p>
+                <div style='display:flex; justify-content:space-between; gap:8px;'>
+                    <div style='background:{TB_BLUE_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
+                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>PENDING</p>
+                        <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(sent)}</p>
+                    </div>
+                    <div style='background:{TB_GREEN_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
+                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>ACCEPTED</p>
+                        <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(accepted)}</p>
+                    </div>
+                    <div style='background:{TB_RED_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
+                        <p style='margin:0; font-size:9px; font-weight:800; color:#000000;'>DECLINED</p>
+                        <p style='margin:0; font-size:20px; font-weight:800; color:#000000;'>{len(declined)}</p>
+                    </div>
+                </div>
             </div>
         """, unsafe_allow_html=True)
 
