@@ -665,7 +665,7 @@ def run_pod_tab(pod_name):
         """, unsafe_allow_html=True)
 
     with c3:
-        # 1. The Supercard Background (Margin-bottom set to 0 to keep the math clean)
+        # 1. The Supercard Background
         st.markdown(f"""
             <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:0px; height: 110px;'>
                 <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Dispatched Tracking: {total_dispatched}</p>
@@ -687,24 +687,26 @@ def run_pod_tab(pod_name):
             fetch_sent_records_from_sheet.clear()
             st.rerun()
 
-        # 3. The CSS Hack to pull the wrapper UP and RIGHT
+        # 3. The Aggressive CSS to kill the background and pull it into the card
         st.markdown("""
             <style>
-            /* Target the WRAPPER of the button using the title attribute */
+            /* Pull the wrapper UP and RIGHT */
             div.stButton:has(button[title="Force Sync Portal Accept/Declines"]) {
-                margin-top: -110px !important;  /* Pulls it UP into the card */
-                margin-left: auto !important;   /* Pushes it RIGHT */
-                margin-right: 5px !important;   /* Slight padding from the right edge */
-                width: fit-content !important;  /* Prevents it from blocking clicks on the card */
+                margin-top: -110px !important;  
+                margin-left: auto !important;   
+                margin-right: 5px !important;   
+                width: fit-content !important;  
                 position: relative !important;
                 z-index: 99 !important;
             }
             
+            /* Strip ALL backgrounds, borders, and shadows from the button */
             button[title="Force Sync Portal Accept/Declines"] {
+                background-color: transparent !important;
                 background: transparent !important;
                 border: none !important;
                 box-shadow: none !important;
-                font-size: 18px !important;
+                font-size: 16px !important;
                 width: 30px !important;
                 height: 30px !important;
                 padding: 0 !important;
@@ -712,14 +714,21 @@ def run_pod_tab(pod_name):
                 transition: transform 0.4s ease !important;
             }
             
-            button[title="Force Sync Portal Accept/Declines"]:hover {
-                transform: rotate(180deg) !important;
+            /* Prevent the gray box from flashing when hovering or clicking */
+            button[title="Force Sync Portal Accept/Declines"]:hover,
+            button[title="Force Sync Portal Accept/Declines"]:focus,
+            button[title="Force Sync Portal Accept/Declines"]:active {
+                background-color: transparent !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
                 color: #000000 !important;
+                transform: rotate(180deg) !important;
             }
             </style>
         """, unsafe_allow_html=True)
 
-    # --- MAP RENDERING (RESTORED!) ---
+    # --- MAP RENDERING (SAFELY RESTORED) ---
     st.markdown("<br>", unsafe_allow_html=True)
     m = folium.Map(location=cls[0]['center'], zoom_start=6, tiles="cartodbpositron")
     for c in ready: folium.CircleMarker(c['center'], radius=10, color=TB_GREEN, fill=True, opacity=0.8).add_to(m)
@@ -728,6 +737,8 @@ def run_pod_tab(pod_name):
     st_folium(m, width=1100, height=400, key=f"map_{pod_name}")
     
     st.markdown("---")
+
+    # Tabs follow normally down here...
 
     # TABS REMAIN UNTOUCHED
     t1, t2, t3, gap, t4, t5, end_gap = st.tabs([
