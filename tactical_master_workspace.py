@@ -667,7 +667,7 @@ def run_pod_tab(pod_name):
     with c3:
         # 1. The Supercard Background
         st.markdown(f"""
-            <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px; position:relative;'>
+            <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:0px; height: 110px;'>
                 <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Dispatched Tracking: {total_dispatched}</p>
                 <div style='display:flex; justify-content:space-between; gap:8px;'>
                     <div style='background:{TB_GREEN_FILL}; flex:1; padding:8px; border-radius:8px; text-align:center;'>
@@ -682,54 +682,57 @@ def run_pod_tab(pod_name):
             </div>
         """, unsafe_allow_html=True)
         
-        # 2. The Button (Swapped to a text-symbol ↻ so it doesn't render blue)
-        if st.button("↻", key=f"sync_track_{pod_name}"):
+        # 2. The Button (Uses '↻' text symbol so it can be colored grey, and a specific title attribute)
+        if st.button("↻", key=f"sync_track_{pod_name}", help="SyncStatus"):
             fetch_sent_records_from_sheet.clear()
             st.rerun()
 
-        # 3. The Ironclad CSS to strip the button and float it
+        # 3. The Ironclad CSS (Guaranteed to beat the global purple rule and drag the icon into the card)
         st.markdown("""
             <style>
-            /* 1. Target the 3rd column specifically and absolute-position the button container to the top right */
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] {
+            /* 1. Pull the button UP into the card and force it to the right */
+            div.stButton > button[title="SyncStatus"] {
                 position: absolute !important;
-                top: 5px !important;
-                right: 15px !important;
-                z-index: 99 !important;
-                width: auto !important;
-            }
-            
-            /* 2. Nuke ALL heavy styling on the button itself so it becomes a clean icon */
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] button {
+                margin-top: -105px !important; /* Pulls it exactly into the top right */
+                right: 10px !important;
                 background-color: transparent !important;
                 background: transparent !important;
                 border: none !important;
                 box-shadow: none !important;
-                color: #94a3b8 !important; /* Cool Grey */
-                padding: 0 !important;
-                min-height: 0 !important;
-                height: 30px !important;
-                width: 30px !important;
+                color: #94a3b8 !important; /* Clean Grey Icon */
                 font-size: 22px !important;
+                font-weight: 800 !important;
+                width: 30px !important;
+                height: 30px !important;
+                min-height: 0 !important;
+                padding: 0 !important;
                 line-height: 1 !important;
-                transition: all 0.3s ease !important;
+                z-index: 99 !important;
+                transition: transform 0.4s ease, color 0.2s ease !important;
             }
-            
-            /* 3. Spin and darken when hovered, kill the gray focus box */
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] button:hover,
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] button:focus,
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] button:active {
-                color: #000000 !important;
-                transform: rotate(180deg) !important;
+
+            /* 2. COMPLETELY KILL the Purple hover/focus states */
+            div.stButton > button[title="SyncStatus"]:hover,
+            div.stButton > button[title="SyncStatus"]:focus,
+            div.stButton > button[title="SyncStatus"]:active {
                 background-color: transparent !important;
                 background: transparent !important;
                 border: none !important;
                 box-shadow: none !important;
+                color: #000000 !important; /* Turns black when hovered */
+                transform: rotate(180deg) !important;
+            }
+
+            /* 3. Collapse the ghost container left behind so it doesn't push your map down */
+            div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-of-type(3) div.element-container:has(button[title="SyncStatus"]) {
+                height: 0px !important;
+                margin: 0px !important;
+                padding: 0px !important;
             }
             </style>
         """, unsafe_allow_html=True)
 
-    # --- MAP RENDERING (SAFELY RESTORED) ---
+    # --- MAP RENDERING (SAFELY RESTORED!) ---
     st.markdown("<br>", unsafe_allow_html=True)
     m = folium.Map(location=cls[0]['center'], zoom_start=6, tiles="cartodbpositron")
     for c in ready: folium.CircleMarker(c['center'], radius=10, color=TB_GREEN, fill=True, opacity=0.8).add_to(m)
@@ -738,8 +741,6 @@ def run_pod_tab(pod_name):
     st_folium(m, width=1100, height=400, key=f"map_{pod_name}")
     
     st.markdown("---")
-
-    # Tabs follow normally down here...
 
     # TABS REMAIN UNTOUCHED
     t1, t2, t3, gap, t4, t5, end_gap = st.tabs([
