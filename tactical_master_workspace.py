@@ -395,29 +395,52 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
 
     st.write("### 📍 Route Stops")
 
-    # --- 1. STOP METRICS ---
+    # --- 1. YOUR SPECIFIC STOP METRICS LOGIC ---
     stop_metrics = {}
     for c in cluster['data']:
         addr = c['full']
         if addr not in stop_metrics:
             stop_metrics[addr] = {'t_count': 0, 'n_ad': 0, 'c_ad': 0, 'd_ad': 0, 'inst': 0, 'remov': 0, 'digi': 0, 'oth': 0}
+        
         stop_metrics[addr]['t_count'] += 1
         tt = str(c.get('task_type', '')).strip().lower()
-        if not tt or any(x in tt for x in ["new ad", "digital ad", "art change", "top"]): stop_metrics[addr]['n_ad'] += 1
-        elif any(x in tt for x in ["continuity", "photo", "swap"]): stop_metrics[addr]['c_ad'] += 1
-        elif any(x in tt for x in ["default", "pull down"]): stop_metrics[addr]['d_ad'] += 1
-        elif "install" in tt: stop_metrics[addr]['inst'] += 1
-        elif "removal" in tt: stop_metrics[addr]['remov'] += 1
-        elif "service" in tt: stop_metrics[addr]['digi'] += 1
-        else: stop_metrics[addr]['oth'] += 1
+        
+        if not tt or any(x in tt for x in ["new ad", "digital ad with bottom", "digital ad with magnet", "art change", "location in venue incorrect", "top"]):
+            stop_metrics[addr]['n_ad'] += 1
+        elif any(x in tt for x in ["continuity", "move kiosk", "photo retake", "swap magnets", "reorder", "fix", "digital photo", "photo"]):
+            stop_metrics[addr]['c_ad'] += 1
+        elif any(x in tt for x in ["default", "store default", "default ad", "ad takedown", "pull down"]):
+            stop_metrics[addr]['d_ad'] += 1
+        elif any(x in tt for x in ["kiosk install", "install"]): 
+            stop_metrics[addr]['inst'] += 1
+        elif any(x in tt for x in ["kiosk removal", "cvs kiosk removal"]): 
+            stop_metrics[addr]['remov'] += 1
+        elif any(x in tt for x in ["digital service", "digital ins/remove", "service kiosk"]): 
+            stop_metrics[addr]['digi'] += 1
+        else:
+            stop_metrics[addr]['oth'] += 1
 
+    loc_pills = {} 
     for addr, metrics in stop_metrics.items():
-        st.markdown(f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{metrics['t_count']} Tasks</span>", unsafe_allow_html=True)
+        pill_parts = []
+        if metrics['n_ad'] > 0: pill_parts.append(f"🆕 {metrics['n_ad']} New Ad")
+        if metrics['c_ad'] > 0: pill_parts.append(f"🔄 {metrics['c_ad']} Continuity")
+        if metrics['d_ad'] > 0: pill_parts.append(f"⚪ {metrics['d_ad']} Default")
+        if metrics['inst'] > 0: pill_parts.append(f"🛠️ {metrics['inst']} Kiosk Install")
+        if metrics['remov'] > 0: pill_parts.append(f"🛑 {metrics['remov']} Kiosk Removal")
+        if metrics['digi'] > 0: pill_parts.append(f"📱 {metrics['digi']} Digital Service")
+        if metrics['oth'] > 0: pill_parts.append(f"📦 {metrics['oth']} Other")
+        
+        pill_str = " | ".join(pill_parts)
+        loc_pills[addr] = f"({metrics['t_count']} Tasks) {pill_str}"
+        st.markdown(f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{metrics['t_count']} Tasks</span>&nbsp; <span style='font-size: 13px; color: #475569;'>— {pill_str}</span>", unsafe_allow_html=True)
+        
     st.divider()
 
     # --- 2. CONTRACTOR SEARCH & KEYS ---
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy()
+    
     if not v_ics.empty:
         v_ics['d'] = v_ics.apply(lambda x: haversine(cluster['center'][0], cluster['center'][1], x['Lat'], x['Lng']), axis=1)
         v_ics = v_ics[v_ics['d'] <= 100].sort_values('d').head(5)
@@ -431,7 +454,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     rate_key = f"rate_val_{cluster_hash}"
     sel_key = f"sel_{cluster_hash}"
 
-    # --- 3. DYNAMIC REFRESH CALLBACK ---
+    # --- 3. DYNAMIC PRICING REFRESH CALLBACK ---
     def update_pricing_on_ic_change():
         selected_label = st.session_state[sel_key]
         new_ic = ic_opts[selected_label]
@@ -440,9 +463,8 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         st.session_state[pay_key] = new_pay
         st.session_state[rate_key] = float(round(new_pay / cluster['stops'], 2))
 
-    # Initial Setup
+    # Initial Pricing Setup
     if pay_key not in st.session_state:
-        # Run calculation for the first contractor in the list
         first_ic = list(ic_opts.values())[0]
         _, h, _ = get_gmaps(first_ic['Location'], list(stop_metrics.keys())[:25])
         initial_pay = float(round(max(cluster['stops'] * 18.0, h * 25.0), 2))
@@ -459,17 +481,25 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     mi, hrs, t_str = get_gmaps(ic['Location'], list(stop_metrics.keys())[:25])
 
     current_rate = st.session_state.get(rate_key, 0)
+    # LOCK CHECK: Rate >= $25 | Distance > 60mi | Flagged Route
     needs_unlock = (current_rate >= 25.0) or (ic['d'] > 60) or (cluster['status'] == 'Flagged')
     is_unlocked = True 
     
     if needs_unlock:
         reasons = []
-        if current_rate >= 25.0: reasons.append(f"High Rate (${current_rate})")
+        if current_rate >= 25.0: reasons.append(f"High Rate (${current_rate}/stop)")
         if ic['d'] > 60: reasons.append(f"Distance ({round(ic['d'],1)}mi)")
         if cluster['status'] == 'Flagged': reasons.append("Flagged Route")
-        st.markdown(f"""<div style="background-color:#fef2f2; border:1px solid #ef4444; padding:10px; border-radius:8px; margin-bottom:15px;"><span style="color:#b91c1c; font-weight:800;">🔒 ACTION REQUIRED:</span> <span style="color:#7f1d1d;">{ " & ".join(reasons) }</span></div>""", unsafe_allow_html=True)
+        
+        st.markdown(f"""
+            <div style="background-color:#fef2f2; border:1px solid #ef4444; padding:10px; border-radius:8px; margin-bottom:15px;">
+                <span style="color:#b91c1c; font-weight:800;">🔒 ACTION REQUIRED:</span> 
+                <span style="color:#7f1d1d;">{ " & ".join(reasons) }</span>
+            </div>
+        """, unsafe_allow_html=True)
         is_unlocked = st.checkbox("Authorize Premium Rate / Distance", key=f"lock_{cluster_hash}")
 
+    # Dynamic Sync Functions
     def sync_rate(): st.session_state[rate_key] = round(st.session_state[pay_key] / cluster['stops'], 2)
     def sync_pay(): st.session_state[pay_key] = round(st.session_state[rate_key] * cluster['stops'], 2)
 
@@ -480,46 +510,60 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     with col_d:
         due = st.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{cluster_hash}", disabled=not is_unlocked)
 
-    # --- 5. FINANCIALS DISPLAY ---
+    # --- 5. FINANCIALS & LOGISTICS DISPLAY ---
     m1, m2 = st.columns(2)
     with m1: 
         status_color = TB_GREEN if 18.0 <= eff_stop <= 23.0 else "#ef4444"
-        st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{status_color};'>Total: ${pay:,.2f}</p><p style='margin:0; font-size:13px; color:#000000;'>Breakdown: ${eff_stop}/stop</p></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; text-transform:uppercase;'>Financials</p><p style='margin:0; font-size:24px; font-weight:800; color:{status_color};'>Total: ${pay:,.2f}</p><p style='margin:0; font-size:13px; color:#000000;'>Breakdown: ${eff_stop}/stop x {cluster['stops']} stops</p></div>", unsafe_allow_html=True)
     with m2: 
         st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; text-transform:uppercase;'>Logistics</p><p style='margin:0; font-size:24px; font-weight:800; color:#000000;'>{t_str}</p><p style='margin:0; font-size:13px; color:#000000;'>Round Trip: {mi} mi</p></div>", unsafe_allow_html=True)
 
-    # --- 6. PREVIEW & GMAIL ---
+    # --- 6. PREVIEW & GMAIL GENERATION ---
     wo_val = f"{ic['Name']} - {datetime.now().strftime('%m%d%Y')}"
     sig_preview = (f"Work Order: {wo_val}\nContractor: {ic['Name']}\nDue Date: {due.strftime('%A, %b %d, %Y')}\n\n"
            f"Metrics:\n- Stops: {cluster['stops']}\n- Mileage: {mi} mi\n- Time: {t_str}\n- Compensation: ${pay:.2f}\n\n"
            f"Authorize here:\n{PORTAL_BASE_URL}?route={link_id}&v2=true")
     
-    st.text_area("Email Content Preview", sig_preview, height=150, key=f"tx_{cluster_hash}_preview", disabled=not is_unlocked)
+    st.text_area("Email Content Preview", sig_preview, height=180, key=f"tx_{cluster_hash}_preview", disabled=not is_unlocked)
 
     btn_label = "🚀 GENERATE LINK & OPEN GMAIL" if (not real_id or is_declined) else "🚀 OPEN IN GMAIL (RESEND)"
 
     if st.button(btn_label, type="primary", key=f"gbtn_{cluster_hash}", disabled=not is_unlocked):
         final_route_id = real_id
-        with st.spinner("Generating..."):
+        with st.spinner("Generating secure link..."):
             if not final_route_id or is_declined:
+                home = ic['Location']
                 payload = {
-                    "icn": ic['Name'], "ice": ic['Email'], "wo": wo_val, "due": str(due), "comp": pay, 
-                    "lCnt": cluster['stops'], "mi": mi, "time": t_str, "phone": str(ic['Phone']),
-                    "locs": " | ".join([ic['Location']] + list(stop_metrics.keys()) + [ic['Location']]),
-                    "taskIds": ",".join(task_ids), "tCnt": len(task_ids),
-                    "jobOnly": " | ".join([f"{a} {metrics['t_count']}" for a, metrics in stop_metrics.items()])
+                    "icn": ic['Name'], "ice": ic['Email'], "wo": wo_val, 
+                    "due": str(due), "comp": pay, "lCnt": cluster['stops'], "mi": mi, "time": t_str, "phone": str(ic['Phone']),
+                    "locs": " | ".join([home] + list(stop_metrics.keys()) + [home]),
+                    "taskIds": ",".join(task_ids),
+                    "tCnt": len(task_ids),
+                    "jobOnly": " | ".join([f"{a} {pill}" for a, pill in loc_pills.items()])
                 }
                 res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
-                if res.get("success"): final_route_id = res.get("routeId")
-                else: st.error("Failed."); st.stop()
+                if res.get("success"):
+                    final_route_id = res.get("routeId")
+                    st.session_state[sync_key] = final_route_id
+                else:
+                    st.error("Failed to generate link."); st.stop()
 
+        # Build final signature with final_route_id
         final_sig = sig_preview.replace("LINK_PENDING", final_route_id)
         gmail_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={ic['Email']}&su=Route Request: {ic['Name']}&body={requests.utils.quote(final_sig)}"
+        
         st.components.v1.html(f"<script>window.open('{gmail_url}', '_blank');</script>", height=0)
         
-        st.session_state[f"sent_ts_{cluster_hash}"] = datetime.now().strftime('%m/%d %I:%M %p')
+        # State updates for UI
+        now_ts = datetime.now().strftime('%m/%d %I:%M %p')
+        st.session_state[f"sent_ts_{cluster_hash}"] = now_ts
         st.session_state[f"contractor_{cluster_hash}"] = ic['Name']
         st.session_state[f"route_state_{cluster_hash}"] = "email_sent"
+        
+        timer_placeholder = st.empty()
+        for sec in range(10, 0, -1):
+            timer_placeholder.success(f"✅ Link Generated! Moving card in {sec}s...")
+            time.sleep(1)
         st.rerun()
             
 def run_pod_tab(pod_name):
