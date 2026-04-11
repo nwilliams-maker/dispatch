@@ -253,12 +253,21 @@ def process_pod(pod_name):
             # Tag for the Star Pill (Only true if it is in a team AND that team is the Escalation team)
             is_esc = (c_type == 'TEAM' and container.get('team') in esc_team_ids)
             
+            # ---> NEW: Extract Task Type from Metadata <---
+            tt_val = ""
+            for m in (t.get('metadata') or []):
+                m_name = str(m.get('name', '')).lower().strip()
+                if 'tasktype' in m_name or 'task type' in m_name:
+                    tt_val = str(m.get('value', '')).strip()
+                    break
+            
             if stt in config['states']:
                 pool.append({
                     "id": t['id'], "city": addr.get('city', 'Unknown'), "state": stt,
                     "full": f"{addr.get('number','')} {addr.get('street','')}, {addr.get('city','')}, {stt}",
                     "lat": t['destination']['location'][1], "lon": t['destination']['location'][0],
-                    "escalated": is_esc
+                    "escalated": is_esc,
+                    "task_type": tt_val # <--- Attached for the pills!
                 })
         
         clusters = []
@@ -361,11 +370,37 @@ def render_dispatch(cluster, pod_name, is_sent=False):
     link_id = real_id if real_id else "LINK_PENDING"
     
     st.write("### 📍 Route Stops")
-    loc_sum = {}
-    for c in cluster['data']: loc_sum[c['full']] = loc_sum.get(c['full'], 0) + 1
-    for addr, count in loc_sum.items(): st.markdown(f"**{addr}** ({count} Tasks)")
-    st.divider()
+    
+    # ---> NEW: Count specific task types per location <---
+    loc_data = {}
+    for c in cluster['data']:
+        addr = c['full']
+        if addr not in loc_data:
+            loc_data[addr] = {'total': 0, 'new': 0, 'cont': 0, 'def': 0}
+        
+        loc_data[addr]['total'] += 1
+        tt = str(c.get('task_type', '')).strip().lower()
+        
+        # Categorize exactly as requested
+        if tt in ["new ad", "digital ad with bottom", "art change"]:
+            loc_data[addr]['new'] += 1
+        elif tt in ["continuity", "ad takedown", "move kiosk", "photo retake", "pull down", "swap magnets", "reorder", "fix", "digital photo", "photo"]:
+            loc_data[addr]['cont'] += 1
+        elif tt in ["default", "store default", "default ad"]:
+            loc_data[addr]['def'] += 1
 
+    # Render the new Pills!
+    for addr, counts in loc_data.items():
+        pill_parts = []
+        if counts['new'] > 0: pill_parts.append(f"🆕 {counts['new']} New")
+        if counts['cont'] > 0: pill_parts.append(f"🔄 {counts['cont']} Continuity")
+        if counts['def'] > 0: pill_parts.append(f"⚪ {counts['def']} Default")
+        
+        # Build the pill, or fallback to standard count if task type was totally blank/unknown
+        pill_str = f" `[ {' | '.join(pill_parts)} ]`" if pill_parts else f" `[ {counts['total']} Tasks ]`"
+        st.markdown(f"**{addr}** {pill_str}")
+        
+    st.divider()
     ic_df = st.session_state.get('ic_df', pd.DataFrame())
     v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy()
     
@@ -392,7 +427,7 @@ def render_dispatch(cluster, pod_name, is_sent=False):
     due = col_c.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{cluster_hash}")
 
     ic = ic_opts[sel_label]
-    mi, hrs, t_str = get_gmaps(ic['Location'], list(loc_sum.keys())[:25])
+    mi, hrs, t_str = get_gmaps(ic['Location'], list(loc_data.keys())[:25])
     pay = round(max(cluster['stops'] * rate, hrs * 25.0), 2)
     eff_stop = round(pay / cluster['stops'], 2) if cluster['stops'] > 0 else 0
 
@@ -418,10 +453,10 @@ def render_dispatch(cluster, pod_name, is_sent=False):
                 payload = {
                     "icn": ic['Name'], "ice": ic['Email'], "wo": wo_val, 
                     "due": str(due), "comp": pay, "lCnt": cluster['stops'], "mi": mi, "time": t_str, "phone": str(ic['Phone']),
-                    "locs": " | ".join([home] + list(loc_sum.keys()) + [home]),
+                    "locs": " | ".join([home] + list(loc_data.keys()) + [home]),
                     "taskIds": ",".join(task_ids),
                     "tCnt": len(task_ids),
-                    "jobOnly": " | ".join([f"{a} ({c} Tasks)" for a,c in loc_sum.items()])
+                    "jobOnly": " | ".join([f"{a} ({c} Tasks)" for a,c in loc_data.items()])
                 }
                 res = requests.post(GAS_WEB_APP_URL, json={"action": "saveRoute", "payload": payload}).json()
                 if res.get("success"):
