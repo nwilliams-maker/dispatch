@@ -432,7 +432,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
         if counts['cont'] > 0: pill_parts.append(f"🔄 {counts['cont']} Continuity")
         if counts['def'] > 0: pill_parts.append(f"⚪ {counts['def']} Default")
         if counts['install'] > 0: pill_parts.append(f"🛠️ {counts['install']} Install")
-        if counts['removal'] > 0: pill_parts.append(f"🛑 {counts['removal']} Removal")
+        if counts['removal'] > 0: pill_parts.append(f"🛑 {counts['removal']} Kiosk Removal")
         if counts['digital'] > 0: pill_parts.append(f"📱 {counts['digital']} Digital")
         if counts['other'] > 0: pill_parts.append(f"📦 {counts['other']} Other")
         
@@ -440,9 +440,9 @@ def render_dispatch(i, cluster, pod_name, is_sent=False):
         pill_str = " | ".join(pill_parts)
         loc_pills[addr] = f"({counts['total']} Tasks) {pill_str}"
         
-        # Display the UI with a bold Terraboost Purple badge for the Total Count
+        # Display the UI with a resized purple badge and smaller task breakdown text
         st.markdown(
-            f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 8px; border-radius: 10px; font-weight: 800; font-size: 14px;'>{counts['total']} Tasks</span>&nbsp; — {pill_str}", 
+            f"**{addr}** &nbsp;<span style='color: #633094; background-color: #f3e8ff; padding: 2px 6px; border-radius: 10px; font-weight: 800; font-size: 11px;'>{counts['total']} Tasks</span>&nbsp; <span style='font-size: 13px; color: #475569;'>— {pill_str}</span>", 
             unsafe_allow_html=True
         )
         
