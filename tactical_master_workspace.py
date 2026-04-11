@@ -484,29 +484,37 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
         st.session_state[pay_key] = float(initial_pay)
         st.session_state[rate_key] = float(round(initial_pay / cluster['stops'], 2))
 
-    # --- 3. INPUT COLUMNS ---
-    col_a, col_b, col_c = st.columns([1.5, 1.2, 1.2])
+    # --- 1. DEFINE DYNAMIC KEYS & CALLBACKS ---
+    pay_key = f"pay_{cluster_hash}"
+    rate_key = f"rate_{cluster_hash}"
+
+    def update_rate():
+        st.session_state[rate_key] = round(st.session_state[pay_key] / cluster['stops'], 2)
+
+    def update_pay():
+        st.session_state[pay_key] = round(st.session_state[rate_key] * cluster['stops'], 2)
+
+    # Initialize memory if empty
+    if pay_key not in st.session_state:
+        initial_pay = round(max(cluster['stops'] * 18.0, hrs * 25.0), 2)
+        st.session_state[pay_key] = float(initial_pay)
+        st.session_state[rate_key] = float(round(initial_pay / cluster['stops'], 2))
+
+    # --- 2. UNIFIED INPUT ROW ---
+    col_a, col_b, col_c, col_d = st.columns([1.5, 1, 1, 1])
     
     with col_a:
-        # Contractor select stays the same
         sel_label = st.selectbox("Contractor", list(ic_opts.keys()), index=default_idx, key=f"sel_{cluster_hash}")
-
     with col_b:
-        # Total input triggers the update_rate callback
-        pay = st.number_input("Total Comp ($)", min_value=0.0, step=5.0, 
-                              key=pay_key, on_change=update_rate)
-
+        pay = st.number_input("Total Comp ($)", min_value=0.0, step=5.0, key=pay_key, on_change=update_rate)
     with col_c:
-        # Rate input triggers the update_pay callback
-        eff_stop = st.number_input("Rate/Stop ($)", min_value=0.0, step=1.0, 
-                                   key=rate_key, on_change=update_pay)
+        eff_stop = st.number_input("Rate/Stop ($)", min_value=0.0, step=1.0, key=rate_key, on_change=update_pay)
+    with col_d:
+        due = st.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{cluster_hash}")
 
-    due = st.date_input("Deadline", datetime.now().date()+timedelta(14), key=f"dd_{cluster_hash}")
-
-    # --- 4. DYNAMIC FINANCIALS DISPLAY ---
+    # --- 3. DYNAMIC FINANCIALS & LOGISTICS ---
     m1, m2 = st.columns(2)
     with m1: 
-        # Color logic based on the dynamic eff_stop value
         status_color = TB_GREEN if 18.0 <= eff_stop <= 23.0 else "#ef4444"
         st.markdown(f"""
             <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'>
