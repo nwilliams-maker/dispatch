@@ -208,7 +208,7 @@ div[data-testid="stExpander"] {{
 }}
 
 div[data-testid="stExpander"] details summary p {{ 
-    color: #000000 !important; 
+    color: #ffffff !important; 
     font-weight: 800 !important; 
     font-size: 0.95rem !important;
 }}
