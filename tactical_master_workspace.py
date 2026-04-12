@@ -495,7 +495,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     sel_key = f"sel_{cluster_hash}"
     last_sel_key = f"last_sel_{cluster_hash}" # Tracks the "previous" selection
 
-    st.write("### 📍 Route Stops")
+    st.write("### 🟢 Route Stops")
 
     # --- NEW: HISTORY LOG ---
     hist = st.session_state.get(f"history_{cluster_hash}", [])
@@ -835,7 +835,7 @@ def run_pod_tab(pod_name):
     st.markdown("""
 <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; background: #ffffff; padding: 12px; border-radius: 12px; border: 1px solid #cbd5e1; margin-top: -10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
     <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; align-self: center; margin-right: 10px;">Route Key:</div>
-    <div style="font-size: 13px; cursor: help;" title="Route is within distance limits (<60mi) and standard rate (<$25/stop).">📍 Ready</div>
+    <div style="font-size: 13px; cursor: help;" title="Route is within distance limits (<60mi) and standard rate (<$25/stop).">🟢 Ready</div>
     <div style="font-size: 13px; cursor: help;" title="Route is frozen and requires manual authorization before sending.">🔒 Action Required</div>
     <div style="font-size: 13px; cursor: help;" title="The calculated price per stop is $25.00 or higher.">💰 High Rate</div>
     <div style="font-size: 13px; cursor: help;" title="The closest contractor is more than 60 miles away.">📡 Long Distance</div>
@@ -876,7 +876,7 @@ def run_pod_tab(pod_name):
                         if est_rate >= 25.0 or closest_ic['d'] > 60: badges = " 🔒" + badges
 
                 esc_pill = f"  [ ⭐ {c.get('esc_count', 0)} ]" if c.get('esc_count', 0) > 0 else ""
-                with st.expander(f"{badges} 📍 {c['city']}, {c['state']} | {c['stops']} Stops{esc_pill}"): 
+                with st.expander(f"{badges} 🟢 {c['city']}, {c['state']} | {c['stops']} Stops{esc_pill}"): 
                     render_dispatch(i, c, pod_name)
                     
         with t_flagged:
