@@ -85,6 +85,16 @@ st.markdown(f"""
 .stApp {{ background-color: {TB_APP_BG} !important; color: #000000 !important; font-family: 'Inter', sans-serif !important; }}
 .main .block-container {{ max-width: 1100px !important; padding-top: 2rem; }}
 
+/* GLOBAL TABS CONTAINER - Clean & Floating with Bottom Line */
+.stTabs [data-baseweb="tab-list"] {{ 
+    justify-content: center; 
+    gap: 12px; 
+    background: transparent !important; /* Removes the gray box background */
+    padding: 15px 15px 20px 15px !important; /* Adds extra padding on the bottom so pills don't touch the line */
+    border-bottom: 2px solid #cbd5e1 !important; /* 🌟 THIS IS THE HORIZONTAL LINE 🌟 */
+    margin-bottom: 15px !important; /* Pushes the dashboard content down slightly for breathing room */
+}}
+
 /* CENTERED PURPLE HEADERS */
 h1, h2, h3, h4, h5, h6 {{ 
     font-weight: 800 !important; 
