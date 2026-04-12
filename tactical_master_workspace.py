@@ -677,12 +677,39 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     with m2: 
         st.markdown(f"<div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:10px;'><p style='font-size:11px; font-weight:800; text-transform:uppercase;'>Logistics</p><p style='margin:0; font-size:24px; font-weight:800; color:#000000;'>{t_str}</p><p style='margin:0; font-size:13px; color:#000000;'>Round Trip: {mi} mi</p></div>", unsafe_allow_html=True)
 
-    # --- DYNAMIC EMAIL PREVIEW ---
+    # --- BUILD STOP PREVIEW & METRICS ---
+    preview_stops = cluster['data'][:2]
+    stops_text = ""
+    for i, stop in enumerate(preview_stops, start=1):
+        full_addr = stop.get('full', 'Unknown Address')
+        stops_text += f"📍 Stop {i}: {full_addr}\n"
+
+    # Calculate total kiosk installs across the whole route
+    total_installs = sum(metrics['inst'] for metrics in stop_metrics.values())
+    install_warning = "⚠️ Please Note: This route contains kiosk install(s) which will require heavy lifting of up to 50lbs.\n\n" if total_installs > 0 else ""
+
+    # --- DYNAMIC EMAIL PREVIEW (Upgraded Flow) ---
     due = st.session_state.get(f"dd_{cluster_hash}", datetime.now().date()+timedelta(14))
     wo_val = f"{ic['Name']} - {datetime.now().strftime('%m%d%Y')}"
-    sig_preview = (f"Work Order: {wo_val}\nContractor: {ic['Name']}\nDue Date: {due.strftime('%A, %b %d, %Y')}\n\n"
-           f"Metrics:\n- Stops: {cluster['stops']}\n- Mileage: {mi} mi\n- Time: {t_str}\n- Compensation: ${final_pay:.2f}\n\n"
-           f"Authorize here:\n{PORTAL_BASE_URL}?route={link_id}&v2=true")
+    
+    sig_preview = (
+        f"Hello {ic['Name']},\n\n"
+        f"We have a new route available for you to review.\n\n"
+        f"📋 Work Order: {wo_val}\n"
+        f"📅 Due Date: {due.strftime('%A, %b %d, %Y')}\n"
+        f"💰 Estimated Compensation: ${final_pay:.2f}\n"
+        f"🛠️ Kiosk Installs: {total_installs}\n\n"
+        f"{install_warning}"
+        f"--- Route Preview ---\n"
+        f"{stops_text}\n"
+        f"To view the complete route details—including total stops, estimated mileage, and time—please click the secure link below to access your Route Summary.\n\n"
+        f"⚠️ ACTION REQUIRED:\n"
+        f"You must confirm by selecting 'Accept' or 'Decline' directly through the portal link. Your response updates our dispatch board in real-time so we can finalize the schedule.\n\n"
+        f"✅ Auto-Assignment:\n"
+        f"Once you click 'Accept', all tasks will be automatically assigned to your OnFleet app!\n\n"
+        f"👉 Review & Respond Here:\n"
+        f"{PORTAL_BASE_URL}?route={link_id}&v2=true"
+    )
     
     # This forces Streamlit to wipe the old text and inject the fresh math/dates instantly
     tx_key = f"tx_{cluster_hash}_preview"
