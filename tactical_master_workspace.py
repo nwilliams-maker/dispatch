@@ -199,26 +199,38 @@ div[data-testid="stColumn"]:has(.expander-hook) div[data-testid="stExpander"] {{
     border-bottom-right-radius: 0px !important;
 }}
 
+/* Main Expander Container */
 div[data-testid="stExpander"] {{ 
     border: 1px solid #cbd5e1 !important; 
     border-radius: 10px !important; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
     margin-bottom: 8px !important;
     background-color: #ffffff !important;
+    overflow: hidden !important;
 }}
 
+/* Header text color (White) */
 div[data-testid="stExpander"] details summary p {{ 
-    color: #ffffff !important; 
+    color: #000000 !important; /* Set to Black for readability on white bg */
     font-weight: 800 !important; 
     font-size: 0.95rem !important;
 }}
 
-/* INPUTS & SELECTS */
-div[data-baseweb="select"] > div, 
-div[data-testid="stNumberInput"] input, 
-div[data-testid="stDateInput"] input,
-div[data-testid="stTextArea"] textarea {{ 
-    background-color: #ffffff !important; color: #000000 !important; border: 1.5px solid #cbd5e1 !important; border-radius: 8px !important;
+/* 🚀 FIX: STOP THE DARK HOVER */
+div[data-testid="stExpander"] details summary:hover {{
+    background-color: #fcfaff !important; /* Light purple tint instead of dark gray */
+    color: #633094 !important;
+}}
+
+/* Keep text black/purple on hover so it doesn't disappear */
+div[data-testid="stExpander"] details summary:hover p {{
+    color: #633094 !important;
+}}
+
+/* Remove the default focus border which often looks like a dark box */
+div[data-testid="stExpander"] details summary:focus {{
+    outline: none !important;
+    box-shadow: none !important;
 }}
 
 label, div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 600 !important; }}
