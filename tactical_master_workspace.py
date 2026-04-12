@@ -428,10 +428,12 @@ def process_pod(pod_name, master_bar=None, pod_idx=0, total_pods=1):
                 "status": status, "has_ic": has_ic,
                 "esc_count": sum(1 for x in group if x.get('escalated'))
             })
-            
+
+        
         st.session_state[f"clusters_{pod_name}"] = clusters
         if not master_bar: prog_bar.empty() # Only clear if it was a single pod pull
 
+    
     except Exception as e:
         st.error(f"Error initializing {pod_name}: {str(e)}")
 
