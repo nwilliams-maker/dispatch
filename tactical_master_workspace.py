@@ -1173,6 +1173,7 @@ with tabs[0]:
 </div>
 """
                 for c in pod_cls: folium.CircleMarker(c['center'], radius=5, color=colors['border'], fill=True, fill_opacity=0.7).add_to(global_map)
+            else:
                 card_content = f"<p style='color: {colors['text']}; opacity: 0.3; font-weight: 800; margin-top: 30px;'>OFFLINE</p>"
 
             # --- RENDER THE PILL (Entire string Flushed Left) ---
