@@ -1080,7 +1080,7 @@ with tabs[0]:
             # --- RENDER THE PILL (Entire string Flushed Left) ---
             st.markdown(f"""
 <div style="border: 2px solid {colors['border']}; border-radius: 30px; padding: 20px 10px; background-color: {colors['bg']}; text-align: center; height: 190px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: center;">
-<h3 style="margin: 0; color: {colors['text']}; font-weight: 800; font-size: 1.2rem;">{pod} Pod</h3>
+<h3 style="margin: 0; color: {colors['text']} !important; font-weight: 800; font-size: 1.2rem;">{pod} Pod</h3>
 {card_content}
 </div>
 """, unsafe_allow_html=True)
