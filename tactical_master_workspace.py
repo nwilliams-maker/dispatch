@@ -1010,6 +1010,9 @@ if "ic_df" not in st.session_state:
         st.session_state.ic_df = pd.read_csv(url)
     except: st.error("Database connection failed.")
 
+# Define the tabs for the entire app
+tabs = st.tabs(["Global", "Blue Pod", "Green Pod", "Orange Pod", "Purple Pod", "Red Pod"])
+
 # --- TAB 0: GLOBAL CONTROL ---
 with tabs[0]:
     st.markdown("<h2 style='text-align:center;'>🌍 Global Command Overview</h2>", unsafe_allow_html=True)
