@@ -64,6 +64,17 @@ st.markdown(f"""
 .stApp {{ background-color: {TB_APP_BG} !important; color: #000000 !important; font-family: 'Inter', sans-serif !important; }}
 .main .block-container {{ max-width: 1100px !important; padding-top: 2rem; }}
 
+/* KILL THE UNDERLINE CLIPPER */
+.stTabs [data-baseweb="tab-highlight"] {{
+    background-color: transparent !important;
+}}
+
+/* Add some padding to the bottom of the tab container so the shadows aren't cut off */
+.stTabs [data-baseweb="tab-list"] {{
+    padding-bottom: 20px !important;
+    border-bottom: none !important;
+}}
+
 /* CENTERED PURPLE HEADERS */
 h1, h2, h3, h4, h5, h6 {{ 
     color: #633094 !important; 
@@ -1017,7 +1028,7 @@ with tabs[0]:
         st.session_state.sent_db = fetch_sent_records_from_sheet()
         all_pods = list(POD_CONFIGS.keys())
         
-        # Global Master Bar
+        # Global Master Bar at the top
         master_prog = st.progress(0, text="🎬 Starting Global Data Pull...")
         
         for i, p in enumerate(all_pods):
@@ -1025,7 +1036,7 @@ with tabs[0]:
             st.session_state.current_loading_pod = p 
             process_pod(p, master_bar=master_prog, pod_idx=i, total_pods=len(all_pods))
         
-        st.session_state.current_loading_pod = None # Reset
+        st.session_state.current_loading_pod = None # Reset when finished
         st.rerun()
 
     st.markdown("---")
@@ -1037,7 +1048,11 @@ with tabs[0]:
     # Pre-prepare the map so we can add markers to it inside the loop
     global_map = folium.Map(location=[39.8283, -98.5795], zoom_start=4, tiles="cartodbpositron")
     
+    # Determine if any data exists globally to show/hide map markers
+    initialized_pods = [p for p in POD_CONFIGS.keys() if f"clusters_{p}" in st.session_state]
+
     for i, pod in enumerate(pod_keys):
+        # Color definitions
         color_hex = {"Blue": "#3b82f6", "Green": "#22c55e", "Orange": "#f97316", "Purple": "#a855f7", "Red": "#ef4444"}.get(pod, "#633094")
         dark_text = {"Blue": "#1e3a8a", "Green": "#064e3b", "Orange": "#7c2d12", "Purple": "#4c1d95", "Red": "#7f1d1d"}.get(pod, "#3b1d58")
         
@@ -1045,18 +1060,19 @@ with tabs[0]:
             is_loading = st.session_state.get("current_loading_pod") == pod
             has_data = f"clusters_{pod}" in st.session_state
             
-            # Start Styled Card
+            # --- START CARD HTML ---
             st.markdown(f"""
                 <div style='border-top: 5px solid {color_hex}; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; 
                             border-bottom: 1px solid #cbd5e1; border-radius: 10px; padding: 15px; background: white; 
-                            box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; min-height: 160px;'>
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; min-height: 180px;'>
                     <h4 style='margin: 0; color: {color_hex}; font-size: 1.1rem;'>{pod} Pod</h4>
                     <hr style='margin: 8px 0; border: 0; border-top: 1px solid #f1f5f9;'>
             """, unsafe_allow_html=True)
             
+            # --- CARD CONTENT (Logic-Based) ---
             if is_loading:
-                st.markdown(f"<p style='color: {color_hex}; font-weight: 700; margin-bottom: 5px;'>📡 Processing...</p>", unsafe_allow_html=True)
-                st.progress(50) # The bar inside the card
+                st.markdown(f"<p style='color: {color_hex}; font-weight: 700; margin-top: 15px;'>📡 Processing...</p>", unsafe_allow_html=True)
+                st.progress(50) # The bar appears inside the card container
             elif has_data:
                 pod_cls = st.session_state[f"clusters_{pod}"]
                 p_tasks = sum(len(c['data']) for c in pod_cls)
@@ -1070,15 +1086,16 @@ with tabs[0]:
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # Add markers to the global map while we have the data
+                # Add this pod's data points to the global map
                 for c in pod_cls:
                     folium.CircleMarker(c['center'], radius=5, color=color_hex, fill=True, fill_opacity=0.6).add_to(global_map)
             else:
-                st.markdown("<p style='color: #cbd5e1; font-style: italic; margin-top: 25px;'>Waiting...</p>", unsafe_allow_html=True)
+                st.markdown("<p style='color: #cbd5e1; font-style: italic; margin-top: 35px;'>Waiting for data...</p>", unsafe_allow_html=True)
             
+            # --- CLOSE CARD HTML ---
             st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- 3. MASTER MAP ---
+    # --- 3. MASTER MAP (Outside the card loop) ---
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🗺️ Master Route Map")
     st_folium(global_map, height=500, use_container_width=True, key="global_overview_map")
