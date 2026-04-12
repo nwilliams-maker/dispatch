@@ -578,13 +578,6 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     st.session_state[tx_key] = sig_preview 
     
     st.text_area("Email Content Preview", height=180, key=tx_key, disabled=not is_unlocked)
-    # --- DEVELOPER OVERRIDE: FORCE ACCEPT ---
-    if st.session_state.get("dev_mode_state"):
-        st.write("---")
-        if st.button("🔓 Force Move to Accepted", key=f"force_acc_{cluster_hash}", use_container_width=True):
-            st.session_state[f"force_accepted_{cluster_hash}"] = True
-            st.toast(f"Route forced to Accepted for {ic['Name']}")
-            st.rerun()
             
     # --- 7. BUTTON LAYOUT ---
     btn_label = "🚀 GENERATE LINK & OPEN GMAIL" if (not real_id or is_declined) else "🚀 OPEN IN GMAIL (RESEND)"
@@ -681,25 +674,17 @@ def run_pod_tab(pod_name):
             c['contractor_name'] = local_contractor
             c['route_ts'] = local_ts
         
-       # --- CATEGORY SORTING (WITH FORCE ACCEPT OVERRIDE) ---
-        if is_forced_accepted:
-            # 1. Developer Force-Accept always wins
-            accepted.append(c)
-            
-        elif route_state == "email_sent" and not is_reverted:
-            # 2. Check for manual resends/sent status
+       # --- ORIGINAL CATEGORY SORTING ---
+        # If reverted, it completely bypasses the Sent/Accepted/Declined checks
+        if route_state == "email_sent" and not is_reverted:
             sent.append(c)
-            
         elif route_state == "link_generated" and not is_reverted:
-            # 3. Check for specific link states
             orig = st.session_state.get(f"orig_status_{cluster_hash}")
             if orig == "declined":
                 declined.append(c)
             else:
                 ready.append(c)
-                
         elif sheet_match and not is_reverted:
-            # 4. Check Google Sheet Portal sync
             raw_status = sheet_match.get('status')
             if raw_status == 'declined':
                 declined.append(c)
@@ -707,9 +692,8 @@ def run_pod_tab(pod_name):
                 accepted.append(c)
             else:
                 sent.append(c)
-                
         else:
-            # 5. Default: Back to standard Dispatch logic
+            # Falls back into standard Dispatching
             if c.get('status') == 'Ready': 
                 ready.append(c)
             else: 
