@@ -598,9 +598,10 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     
     st.text_area("Email Content Preview", height=180, key=tx_key, disabled=not is_unlocked)
 
+    # --- 7. BUTTON LAYOUT ---
     btn_label = "🚀 GENERATE LINK & OPEN GMAIL" if (not real_id or is_declined) else "🚀 OPEN IN GMAIL (RESEND)"
 
-    # Removed the c1/c2 column split entirely, so the main button gets full width
+    # Removed the c1/c2 column split, allowing the main button to use full width
     if st.button(btn_label, type="primary", key=f"gbtn_{cluster_hash}", disabled=not is_unlocked, use_container_width=True):
         final_route_id = real_id
         with st.spinner("Generating secure link..."):
@@ -639,6 +640,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
             timer_placeholder.success(f"✅ Link Generated! Moving card in {sec}s...")
             time.sleep(1)
         st.rerun()
+        
     else:
         target_col = st.container()
 
