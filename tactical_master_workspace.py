@@ -1041,7 +1041,7 @@ with tabs[0]:
     c_btn = st.columns([1,2,1])[1]
     if c_btn.button("🚀 Initialize All Pods", key="global_init_action", use_container_width=True):
         st.session_state.sent_db = fetch_sent_records_from_sheet()
-        st.session_state.trigger_pull = True # Flag to run the pull in the "Loading Zone" below
+        st.session_state.trigger_pull = True 
 
     st.markdown("---")
 
@@ -1050,24 +1050,22 @@ with tabs[0]:
     pod_keys = list(POD_CONFIGS.keys())
     global_map = folium.Map(location=[39.8283, -98.5795], zoom_start=4, tiles="cartodbpositron")
     
-    # We need the sent database to calculate the counts in the cards
     current_sent_db = st.session_state.get('sent_db', {})
 
     for i, pod in enumerate(pod_keys):
-        # Color Map: Matches the Pod Tab colors exactly
-        colors = {{
-            "Blue":   {{"border": "#3b82f6", "bg": "#f0f7ff", "text": "#1e3a8a"}},
-            "Green":  {{"border": "#22c55e", "bg": "#f0fdf4", "text": "#064e3b"}},
-            "Orange": {{"border": "#f97316", "bg": "#fffaf5", "text": "#7c2d12"}},
-            "Purple": {{"border": "#a855f7", "bg": "#faf5ff", "text": "#4c1d95"}},
-            "Red":    {{"border": "#ef4444", "bg": "#fef2f2", "text": "#7f1d1d"}}
-        }}.get(pod)
+        # 🟢 FIXED: Dictionary uses single { } in Python logic
+        colors = {
+            "Blue":   {"border": "#3b82f6", "bg": "#f0f7ff", "text": "#1e3a8a"},
+            "Green":  {"border": "#22c55e", "bg": "#f0fdf4", "text": "#064e3b"},
+            "Orange": {"border": "#f97316", "bg": "#fffaf5", "text": "#7c2d12"},
+            "Purple": {"border": "#a855f7", "bg": "#faf5ff", "text": "#4c1d95"},
+            "Red":    {"border": "#ef4444", "bg": "#fef2f2", "text": "#7f1d1d"}
+        }.get(pod)
         
         with cols[i]:
             is_loading = st.session_state.get("current_loading_pod") == pod
             has_data = f"clusters_{pod}" in st.session_state
             
-            # --- START CARD ---
             st.markdown(f"""
                 <div class='pod-card-pill' style='
                     border: 2px solid {colors['border']}; 
@@ -1089,12 +1087,10 @@ with tabs[0]:
                 total_tasks = sum(len(c['data']) for c in pod_cls)
                 total_stops = sum(c['stops'] for c in pod_cls)
                 
-                # Logic to find how many routes are "Sent"
                 sent_count = 0
                 for c in pod_cls:
                     task_ids = [str(t['id']).strip() for t in c['data']]
                     cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
-                    # Check Sheet Database OR Local session state for dispatch status
                     if any(tid in current_sent_db for tid in task_ids) or st.session_state.get(f"route_state_{cluster_hash}") == "email_sent":
                         sent_count += 1
                 
@@ -1115,7 +1111,6 @@ with tabs[0]:
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # Add points to map
                 for c in pod_cls:
                     folium.CircleMarker(c['center'], radius=5, color=colors['border'], fill=True, fill_opacity=0.7).add_to(global_map)
             else:
@@ -1134,10 +1129,10 @@ with tabs[0]:
         st.session_state.trigger_pull = False
         st.rerun()
 
-        # --- 4. MASTER MAP ---
+    # --- 4. MASTER MAP ---
     st.markdown("<br>### 🗺️ Master Route Map", unsafe_allow_html=True)
     st_folium(global_map, height=500, use_container_width=True, key="global_master_map")
-        st.info("No pod data initialized yet. Click the button above to pull the global data.")
 
+# 🚀 Indent this loop ALL THE WAY to the left (outside the Global Tab block)
 for i, pod in enumerate(["Blue", "Green", "Orange", "Purple", "Red"], 1):
     with tabs[i]: run_pod_tab(pod)
