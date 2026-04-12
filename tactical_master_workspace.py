@@ -1037,71 +1037,102 @@ tabs = st.tabs(["Global", "Blue Pod", "Green Pod", "Orange Pod", "Purple Pod", "
 with tabs[0]:
     st.markdown("<h2 style='text-align:center;'>🌍 Global Command Overview</h2>", unsafe_allow_html=True)
     
-    # --- 1. INITIALIZE BUTTON (Sits at the top) ---
+    # --- 1. INITIALIZE BUTTON ---
     c_btn = st.columns([1,2,1])[1]
-    if c_btn.button("🚀 Initialize All Pods", use_container_width=True):
+    if c_btn.button("🚀 Initialize All Pods", key="global_init_action", use_container_width=True):
         st.session_state.sent_db = fetch_sent_records_from_sheet()
-        master_prog = st.progress(0, text="🎬 Starting Global Data Pull...")
-        all_pods = list(POD_CONFIGS.keys())
-        for i, p in enumerate(all_pods):
-            process_pod(p, master_bar=master_prog, pod_idx=i, total_pods=len(all_pods))
-        master_prog.progress(1.0, text="✅ Data Pull Completed!")
-        time.sleep(1)
-        st.rerun()
+        st.session_state.trigger_pull = True # Flag to run the pull in the "Loading Zone" below
 
-    # --- 2. GLOBAL AGGREGATION LOGIC ---
-    initialized_pods = [p for p in POD_CONFIGS.keys() if f"clusters_{p}" in st.session_state]
+    st.markdown("---")
+
+    # --- 2. PILL CARDS LOOP ---
+    cols = st.columns(len(POD_CONFIGS))
+    pod_keys = list(POD_CONFIGS.keys())
+    global_map = folium.Map(location=[39.8283, -98.5795], zoom_start=4, tiles="cartodbpositron")
     
-    if initialized_pods:
-        st.markdown("---")
+    # We need the sent database to calculate the counts in the cards
+    current_sent_db = st.session_state.get('sent_db', {})
+
+    for i, pod in enumerate(pod_keys):
+        # Color Map: Matches the Pod Tab colors exactly
+        colors = {{
+            "Blue":   {{"border": "#3b82f6", "bg": "#f0f7ff", "text": "#1e3a8a"}},
+            "Green":  {{"border": "#22c55e", "bg": "#f0fdf4", "text": "#064e3b"}},
+            "Orange": {{"border": "#f97316", "bg": "#fffaf5", "text": "#7c2d12"}},
+            "Purple": {{"border": "#a855f7", "bg": "#faf5ff", "text": "#4c1d95"}},
+            "Red":    {{"border": "#ef4444", "bg": "#fef2f2", "text": "#7f1d1d"}}
+        }}.get(pod)
         
-        # We'll create a row of cards for the pods that have data
-        # Using columns to create a "Dashboard" feel
-        cols = st.columns(len(POD_CONFIGS))
-        
-        global_map = folium.Map(location=[39.8283, -98.5795], zoom_start=4, tiles="cartodbpositron")
-        
-        for i, pod in enumerate(POD_CONFIGS.keys()):
-            with cols[i]:
-                # Pod-specific styling based on the name
-                color_hex = {"Blue": "#3b82f6", "Green": "#22c55e", "Orange": "#f97316", "Purple": "#a855f7", "Red": "#ef4444"}.get(pod, "#000000")
+        with cols[i]:
+            is_loading = st.session_state.get("current_loading_pod") == pod
+            has_data = f"clusters_{pod}" in st.session_state
+            
+            # --- START CARD ---
+            st.markdown(f"""
+                <div class='pod-card-pill' style='
+                    border: 2px solid {colors['border']}; 
+                    border-radius: 30px; 
+                    padding: 20px 10px; 
+                    background: {colors['bg']}; 
+                    text-align: center; 
+                    height: 190px; 
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+                    display: flex; flex-direction: column; justify-content: center;'>
+                    <h3 style='margin: 0; color: {colors['text']}; font-weight: 800; font-size: 1.2rem;'>{pod} Pod</h3>
+            """, unsafe_allow_html=True)
+            
+            if is_loading:
+                st.markdown(f"<p class='loading-pulse' style='color:{colors['border']}; margin-top:20px;'>📡 SYNCING...</p>", unsafe_allow_html=True)
+            elif has_data:
+                pod_cls = st.session_state[f"clusters_{pod}"]
+                total_routes = len(pod_cls)
+                total_tasks = sum(len(c['data']) for c in pod_cls)
+                total_stops = sum(c['stops'] for c in pod_cls)
                 
-                if pod in initialized_pods:
-                    pod_cls = st.session_state[f"clusters_{pod}"]
-                    p_tasks = sum(len(c['data']) for c in pod_cls)
-                    p_stops = sum(c['stops'] for c in pod_cls)
-                    p_routes = len(pod_cls)
-                    
-                    st.markdown(f"""
-                        <div style='background: white; border-top: 5px solid {color_hex}; border-radius: 10px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;'>
-                            <h4 style='margin: 0; color: {color_hex};'>{pod} Pod</h4>
-                            <p style='margin: 5px 0 0 0; font-size: 22px; font-weight: 800;'>{p_routes} <span style='font-size: 12px; color: #64748b;'>Routes</span></p>
-                            <hr style='margin: 10px 0;'>
-                            <div style='display: flex; justify-content: space-around;'>
-                                <div><p style='margin:0; font-size:10px; color:#94a3b8;'>TASKS</p><b>{p_tasks}</b></div>
-                                <div><p style='margin:0; font-size:10px; color:#94a3b8;'>STOPS</p><b>{p_stops}</b></div>
-                            </div>
+                # Logic to find how many routes are "Sent"
+                sent_count = 0
+                for c in pod_cls:
+                    task_ids = [str(t['id']).strip() for t in c['data']]
+                    cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
+                    # Check Sheet Database OR Local session state for dispatch status
+                    if any(tid in current_sent_db for tid in task_ids) or st.session_state.get(f"route_state_{cluster_hash}") == "email_sent":
+                        sent_count += 1
+                
+                st.markdown(f"""
+                    <p style='margin: 10px 0 0 0; font-size: 24px; font-weight: 800; color: {colors['text']};'>
+                        {sent_count} / {total_routes} <span style='font-size: 12px; opacity: 0.7;'>Sent</span>
+                    </p>
+                    <div style='display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 12px;'>
+                        <div>
+                            <p style='margin:0; font-size:9px; color: {colors['text']}; opacity: 0.6; font-weight: 800;'>TASKS</p>
+                            <b style='color: {colors['text']}; font-size: 14px;'>{total_tasks}</b>
                         </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Add this pod's data to the global map
-                    for c in pod_cls:
-                        folium.CircleMarker(
-                            c['center'], 
-                            radius=6, 
-                            color=color_hex, 
-                            fill=True, 
-                            fill_opacity=0.6,
-                            popup=f"{pod} Pod: {c['city']}, {c['state']}"
-                        ).add_to(global_map)
-                else:
-                    # Placeholder for uninitialized pods
-                    st.markdown(f"""
-                        <div style='background: #f1f5f9; border-radius: 10px; padding: 15px; text-align: center; border: 1px dashed #cbd5e1; opacity: 0.6;'>
-                            <h4 style='margin: 0; color: #64748b;'>{pod}</h4>
-                            <p style='margin: 5px 0 0 0; font-size: 12px; color: #94a3b8;'>Offline</p>
+                        <div style='border-left: 1px solid rgba(0,0,0,0.06); height: 20px;'></div>
+                        <div>
+                            <p style='margin:0; font-size:9px; color: {colors['text']}; opacity: 0.6; font-weight: 800;'>STOPS</p>
+                            <b style='color: {colors['text']}; font-size: 14px;'>{total_stops}</b>
                         </div>
-                    """, unsafe_allow_html=True)
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # Add points to map
+                for c in pod_cls:
+                    folium.CircleMarker(c['center'], radius=5, color=colors['border'], fill=True, fill_opacity=0.7).add_to(global_map)
+            else:
+                st.markdown(f"<p style='color: {colors['text']}; opacity: 0.3; font-weight: 700; margin-top: 25px;'>OFFLINE</p>", unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    # --- 3. LOADING ZONE (Progress bar stays below cards) ---
+    if st.session_state.get("trigger_pull"):
+        st.session_state.sent_db = fetch_sent_records_from_sheet()
+        prog_bar = st.progress(0, text="🎬 Starting Global Data Sync...")
+        for idx, p in enumerate(pod_keys):
+            st.session_state.current_loading_pod = p 
+            process_pod(p, master_bar=prog_bar, pod_idx=idx, total_pods=len(pod_keys))
+        st.session_state.current_loading_pod = None
+        st.session_state.trigger_pull = False
+        st.rerun()
 
         # --- 3. MASTER MAP ---
         st.markdown("<br>", unsafe_allow_html=True)
