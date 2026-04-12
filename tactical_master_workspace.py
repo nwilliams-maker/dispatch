@@ -57,6 +57,13 @@ headers = {"Authorization": f"Basic {base64.b64encode(f'{ONFLEET_KEY}:'.encode()
 
 st.set_page_config(page_title="Dispatch Command Center", layout="wide")
 
+# --- PINNED TOP-LEFT LOGO ---
+st.markdown("""
+    <div style="position: fixed; top: 15px; left: 20px; z-index: 999999;">
+        <img src="terraboost_logo.png" style="width: 200px;"> 
+    </div>
+""", unsafe_allow_html=True)
+
 # --- UI STYLING ---
 st.markdown(f"""
 <style>
