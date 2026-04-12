@@ -1011,25 +1011,65 @@ tabs = st.tabs(["Global", "Blue Pod", "Green Pod", "Orange Pod", "Purple Pod", "
 with tabs[0]:
     st.markdown("<h2 style='text-align:center;'>🌍 Global Command Overview</h2>", unsafe_allow_html=True)
     
-    # --- 1. INITIALIZE BUTTON (Sits at the top) ---
+    # --- 1. INITIALIZE BUTTON ---
     c_btn = st.columns([1,2,1])[1]
     if c_btn.button("🚀 Initialize All Pods", use_container_width=True):
         st.session_state.sent_db = fetch_sent_records_from_sheet()
-        master_prog = st.progress(0, text="🎬 Starting Global Data Pull...")
         all_pods = list(POD_CONFIGS.keys())
+        
+        # We create a placeholder for the global master bar
+        master_prog = st.progress(0, text="🎬 Starting Global Data Pull...")
+        
         for i, p in enumerate(all_pods):
+            # 🚀 Set the "Active" pod so the card below knows to show its bar
+            st.session_state.current_loading_pod = p 
             process_pod(p, master_bar=master_prog, pod_idx=i, total_pods=len(all_pods))
-        master_prog.progress(1.0, text="✅ Data Pull Completed!")
-        time.sleep(1)
+        
+        st.session_state.current_loading_pod = None # Clear when done
         st.rerun()
 
-    # --- 2. GLOBAL AGGREGATION LOGIC ---
-    initialized_pods = [p for p in POD_CONFIGS.keys() if f"clusters_{p}" in st.session_state]
+    # --- 2. THE STYLED "V CARDS" ---
+    st.markdown("---")
+    cols = st.columns(len(POD_CONFIGS))
+    pod_keys = list(POD_CONFIGS.keys())
     
-    if initialized_pods:
-        st.markdown("---")
+    for i, pod in enumerate(pod_keys):
+        color_hex = {"Blue": "#3b82f6", "Green": "#22c55e", "Orange": "#f97316", "Purple": "#a855f7", "Red": "#ef4444"}.get(pod, "#000000")
+        dark_text = {"Blue": "#1e3a8a", "Green": "#064e3b", "Orange": "#7c2d12", "Purple": "#4c1d95", "Red": "#7f1d1d"}.get(pod, "#000000")
         
-        # We'll create a row of cards for the pods that have data
+        with cols[i]:
+            # Check if this specific pod is currently being pulled
+            is_loading = st.session_state.get("current_loading_pod") == pod
+            has_data = f"clusters_{pod}" in st.session_state
+            
+            # THE "FOLDER TAB" CARD DESIGN
+            st.markdown(f"""
+                <div style='border-top: 5px solid {color_hex}; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; 
+                            border-bottom: 1px solid #cbd5e1; border-radius: 10px; padding: 15px; background: white; 
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; min-height: 140px;'>
+                    <h4 style='margin: 0; color: {color_hex}; font-size: 1.1rem;'>{pod} Pod</h4>
+                    <hr style='margin: 10px 0; border: 0; border-top: 1px solid #f1f5f9;'>
+            """, unsafe_allow_html=True)
+            
+            if is_loading:
+                # This bar appears INSIDE the card while that pod is being processed
+                st.write("📡 *Processing...*")
+                st.progress(50) # Static mid-point during the "active" phase
+            elif has_data:
+                pod_cls = st.session_state[f"clusters_{pod}"]
+                p_tasks = sum(len(c['data']) for c in pod_cls)
+                p_stops = sum(c['stops'] for c in pod_cls)
+                st.markdown(f"""
+                    <p style='margin: 5px 0; font-size: 24px; font-weight: 800; color: {dark_text};'>{len(pod_cls)} <span style='font-size: 12px; color: #94a3b8;'>Routes</span></p>
+                    <div style='display: flex; justify-content: space-around; margin-top: 10px;'>
+                        <div><p style='margin:0; font-size:10px; color:#94a3b8; font-weight:800;'>TASKS</p><b style='color:{dark_text};'>{p_tasks}</b></div>
+                        <div><p style='margin:0; font-size:10px; color:#94a3b8; font-weight:800;'>STOPS</p><b style='color:{dark_text};'>{p_stops}</b></div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("<p style='color: #cbd5e1; font-style: italic; margin-top: 20px;'>Waiting...</p>", unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
         # Using columns to create a "Dashboard" feel
         cols = st.columns(len(POD_CONFIGS))
         
