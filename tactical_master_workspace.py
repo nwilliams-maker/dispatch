@@ -344,17 +344,7 @@ def process_pod(pod_name, master_bar=None, pod_idx=0, total_pods=1):
         clusters = []
         total_pool = len(pool)
         ic_df = st.session_state.get('ic_df', pd.DataFrame())
-        # --- 3. CONTRACTOR FILTERING (100 MILES) ---
-    ic_df = st.session_state.get('ic_df', pd.DataFrame())
-    
-    # Safety Check: If columns aren't there, show a warning instead of crashing
-    if 'Lat' not in ic_df.columns or 'Lng' not in ic_df.columns:
-        st.warning(f"Map data unavailable. Columns found: {list(ic_df.columns)}")
-        return
-
-    # Filter out 'Field Agents' and drop rows with empty coordinates
-    v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].copy()
-    v_ics = v_ics.dropna(subset=['Lat', 'Lng'])
+        v_ics_base = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy() if not ic_df.empty else pd.DataFrame()
 
         while pool:
             # Routing progress calculation
@@ -428,12 +418,10 @@ def process_pod(pod_name, master_bar=None, pod_idx=0, total_pods=1):
                 "status": status, "has_ic": has_ic,
                 "esc_count": sum(1 for x in group if x.get('escalated'))
             })
-
-        
+            
         st.session_state[f"clusters_{pod_name}"] = clusters
         if not master_bar: prog_bar.empty() # Only clear if it was a single pod pull
 
-    
     except Exception as e:
         st.error(f"Error initializing {pod_name}: {str(e)}")
 
@@ -590,7 +578,7 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
     st.session_state[tx_key] = sig_preview 
     
     st.text_area("Email Content Preview", height=180, key=tx_key, disabled=not is_unlocked)
-            
+
     # --- 7. BUTTON LAYOUT ---
     btn_label = "🚀 GENERATE LINK & OPEN GMAIL" if (not real_id or is_declined) else "🚀 OPEN IN GMAIL (RESEND)"
 
@@ -677,7 +665,6 @@ def run_pod_tab(pod_name):
         
         # Check if the dispatcher manually revoked this route
         is_reverted = st.session_state.get(f"reverted_{cluster_hash}", False)
-        is_forced_accepted = st.session_state.get(f"force_accepted_{cluster_hash}", False)
         
         if sheet_match and not is_reverted:
             c['contractor_name'] = sheet_match.get('name', 'Unknown')
@@ -686,7 +673,6 @@ def run_pod_tab(pod_name):
             c['contractor_name'] = local_contractor
             c['route_ts'] = local_ts
         
-       # --- ORIGINAL CATEGORY SORTING ---
         # If reverted, it completely bypasses the Sent/Accepted/Declined checks
         if route_state == "email_sent" and not is_reverted:
             sent.append(c)
@@ -960,7 +946,12 @@ def run_pod_tab(pod_name):
                         if sync_key in st.session_state:
                             del st.session_state[sync_key]
                         st.rerun()
-                        
+# --- START ---
+if "ic_df" not in st.session_state:
+    try:
+        url = f"{IC_SHEET_URL.split('/edit')[0]}/export?format=csv&gid=0"
+        st.session_state.ic_df = pd.read_csv(url)
+    except: st.error("Database connection failed.")
 
 # --- TOP HEADER & REFRESH ROW ---
 col_title, col_ref = st.columns([4, 1])
@@ -1056,31 +1047,4 @@ with tabs[0]:
         st.info("No pod data initialized yet. Click the button above to pull the global data.")
 
 for i, pod in enumerate(["Blue", "Green", "Orange", "Purple", "Red"], 1):
-
-    # --- START ---
-if "ic_df" not in st.session_state:
-    try:
-        url = f"{IC_SHEET_URL.split('/edit')[0]}/export?format=csv&gid=0"
-        df = pd.read_csv(url)
-        
-        # 🚀 1. KILL HIDDEN SPACES IN HEADERS
-        df.columns = [str(c).strip() for c in df.columns]
-        
-        # 🚀 2. FORCE CASE SENSITIVITY FIX
-        # This maps any variation to exactly what the code needs
-        rename_map = {
-            'lat': 'Lat', 'LAT': 'Lat', 'latitude': 'Lat', 'Latitude': 'Lat',
-            'lng': 'Lng', 'LNG': 'Lng', 'longitude': 'Lng', 'Longitude': 'Lng',
-            'long': 'Lng', 'Long': 'Lng'
-        }
-        df = df.rename(columns=rename_map)
-        
-        # 🚀 3. VERIFY & SAVE
-        if 'Lat' in df.columns and 'Lng' in df.columns:
-            st.session_state.ic_df = df
-        else:
-            st.error(f"Critical Columns Missing! Found: {list(df.columns)}")
-            
-    except Exception as e: 
-        st.error(f"Database connection failed: {e}")
     with tabs[i]: run_pod_tab(pod)
