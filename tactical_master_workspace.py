@@ -445,18 +445,19 @@ def render_dispatch(i, cluster, pod_name, is_sent=False, is_declined=False):
 
     ic_opts = {f"{r['Name']} ({round(r['d'],1)} mi)": r for _, r in v_ics.iterrows()}
     
-    # --- 4. THE RESTORED DYNAMIC PRICING LOGIC ---
+    # --- 3. DYNAMIC PRICING SYNC LOGIC ---
     def sync_on_total():
+        # User edited TOTAL COMP
         val = st.session_state[pay_key]
         st.session_state[rate_key] = round(val / cluster['stops'], 2) if cluster['stops'] > 0 else 0
 
     def sync_on_rate():
+        # User edited RATE PER STOP
         val = st.session_state[rate_key]
         st.session_state[pay_key] = round(val * cluster['stops'], 2)
 
     def update_for_new_contractor():
-        # This callback fires BEFORE the UI re-renders, dynamically updating the state
-        # so the grayed-out boxes show the correct math for the new contractor.
+        # Reset pricing floor when a DIFFERENT contractor is selected
         selected_label = st.session_state[sel_key]
         if selected_label != st.session_state.get(last_sel_key):
             ic_new = ic_opts[selected_label]
