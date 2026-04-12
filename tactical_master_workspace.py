@@ -1082,19 +1082,23 @@ def run_pod_tab(pod_name):
                         render_dispatch(i+500, c, pod_name, is_sent=True)
                         
                 with btn_col:
-                    # Hidden hook to pull the button left and square off its left side
                     st.markdown("<div class='flush-hook' style='display:none;'></div>", unsafe_allow_html=True)
-                    if st.button("↩️ Revoke", key=f"quick_rev_{cluster_hash}", help="Pull this route back to Dispatch", use_container_width=True):
-                        # Log the previous contractor
+                    if st.button("↩️ Revoke", key=f"quick_rev_{cluster_hash}", help="Instantly pull back to Dispatch", use_container_width=True):
+                        # 1. Immediate State Updates (The "Instant" part)
+                        st.session_state[f"reverted_{cluster_hash}"] = True
+                        st.session_state[f"route_state_{cluster_hash}"] = "ready_to_dispatch" # Reset local state
+                        
+                        # 2. Log History
                         hist = st.session_state.get(f"history_{cluster_hash}", [])
                         hist.append(f"{ic_name} ({datetime.now().strftime('%m/%d')})")
                         st.session_state[f"history_{cluster_hash}"] = hist
                         
-                        # Flag as reverted and destroy the link
-                        st.session_state[f"reverted_{cluster_hash}"] = True
+                        # 3. Kill the sync link
                         sync_key = f"sync_{cluster_hash}"
                         if sync_key in st.session_state:
                             del st.session_state[sync_key]
+                        
+                        # 4. Immediate Rerun (No waiting)
                         st.rerun()
         with t_acc:
             if not accepted and not pod_ghosts: st.info("Waiting for portal acceptances...")
