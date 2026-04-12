@@ -102,20 +102,28 @@ button[kind="secondary"] {{
     background-color: #ffffff !important;
     color: {TB_PURPLE} !important;
     border: 2px solid {TB_PURPLE} !important;
-    height: 54px !important;
-    font-size: 1rem !important;
+    height: 42px !important;  /* SHRUNK FROM 54px */
+    font-size: 0.9rem !important; /* SCALED DOWN SLIGHTLY */
     font-weight: 800 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+    border-radius: 8px !important; /* Slimmer corners to match the smaller size */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     transition: all 0.2s ease !important;
 }}
 
 button[kind="secondary"]:hover {{
-    background-color: #f3e8ff !important; /* Light purple hover fill */
+    background-color: #f3e8ff !important;
     color: {TB_PURPLE} !important;
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 10px rgba(0,0,0,0.15) !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     border-color: {TB_PURPLE} !important;
+}}
+
+/* FORCE REVOKE BUTTON TO SIT FLUSH AGAINST EXPANDER */
+div[data-testid="column"]:last-child button[kind="secondary"] {{
+    margin-left: -1rem !important; /* Pulls it exactly 16px left to bridge the gap */
+    width: calc(100% + 1rem) !important; /* Stretches the button so it doesn't leave a hole on the right */
+    border-top-left-radius: 0px !important; /* Squares off the corners to look attached */
+    border-bottom-left-radius: 0px !important;
 }}
 
 /* NESTED SUB-TABS OVERRIDE (Clean Uniform Layout) */
@@ -857,7 +865,6 @@ def run_pod_tab(pod_name):
                         render_dispatch(i+500, c, pod_name, is_sent=True)
                         
                 with btn_col:
-                    # 2. Removed the spacer so the button aligns completely flush with the top of the card
                     if st.button("↩️ Revoke", key=f"quick_rev_{cluster_hash}", help="Pull this route back to Dispatch", use_container_width=True):
                         # Log the previous contractor
                         hist = st.session_state.get(f"history_{cluster_hash}", [])
@@ -870,7 +877,6 @@ def run_pod_tab(pod_name):
                         if sync_key in st.session_state:
                             del st.session_state[sync_key]
                         st.rerun()
-
         with t_acc:
             if not accepted: st.info("Waiting for portal acceptances...")
             for i, c in enumerate(accepted):
