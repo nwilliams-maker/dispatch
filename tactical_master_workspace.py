@@ -118,6 +118,13 @@ button[kind="secondary"]:hover {{
     border-color: {TB_PURPLE} !important;
 }}
 
+/* FORCE REVOKE BUTTON TO SIT FLUSH AGAINST EXPANDER */
+.flush-hook + div[data-testid="stButton"] button {{
+    margin-left: -16px !important;
+    border-top-left-radius: 0px !important; /* Squares off the left side so it connects seamlessly */
+    border-bottom-left-radius: 0px !important;
+}}
+
 /* NESTED SUB-TABS OVERRIDE (Clean Uniform Layout) */
 div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"] {{
     background-color: #f8fafc !important; 
