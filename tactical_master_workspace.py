@@ -64,6 +64,15 @@ st.markdown(f"""
 .stApp {{ background-color: {TB_APP_BG} !important; color: #000000 !important; font-family: 'Inter', sans-serif !important; }}
 .main .block-container {{ max-width: 1100px !important; padding-top: 2rem; }}
 
+/* Floating Card Animation */
+.pod-card-pill {{
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}}
+.pod-card-pill:hover {{
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(99, 48, 148, 0.15) !important;
+}}
+
 /* CENTERED PURPLE HEADERS */
 h1, h2, h3, h4, h5, h6 {{ 
     color: #633094 !important; 
@@ -98,7 +107,7 @@ div.refresh-btn-container > div > button:hover {{
 }}
 
 /* GLOBAL TABS STYLING */
-.stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 15px; }}
+.stTabs [data-baseweb="tab-list"] { justify-content: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 15px; }
 
 /* PERMANENT POD TAB OUTLINES & DARK TEXT */
 .stTabs [data-baseweb="tab"] {{
@@ -1011,78 +1020,72 @@ tabs = st.tabs(["Global", "Blue Pod", "Green Pod", "Orange Pod", "Purple Pod", "
 with tabs[0]:
     st.markdown("<h2 style='text-align:center;'>🌍 Global Command Overview</h2>", unsafe_allow_html=True)
     
-    # --- 1. INITIALIZE BUTTON (Sits at the top) ---
+    # 1. INITIALIZE BUTTON
     c_btn = st.columns([1,2,1])[1]
-    if c_btn.button("🚀 Initialize All Pods", use_container_width=True):
+    if c_btn.button("🚀 Initialize All Pods", key="global_init_btn", use_container_width=True):
+        st.session_state.trigger_pull = True # Set a flag to start the pull below the cards
+
+    st.markdown("---")
+
+    # 2. THE STYLED OVERVIEW CARDS (Single Loop)
+    cols = st.columns(len(POD_CONFIGS))
+    pod_keys = list(POD_CONFIGS.keys())
+    global_map = folium.Map(location=[39.8283, -98.5795], zoom_start=4, tiles="cartodbpositron")
+    
+    for i, pod in enumerate(pod_keys):
+        colors = {
+            "Blue": {"border": "#3b82f6", "bg": "#f0f7ff", "text": "#1e3a8a"},
+            "Green": {"border": "#22c55e", "bg": "#f0fdf4", "text": "#064e3b"},
+            "Orange": {"border": "#f97316", "bg": "#fffaf5", "text": "#7c2d12"},
+            "Purple": {"border": "#a855f7", "bg": "#faf5ff", "text": "#4c1d95"},
+            "Red": {"border": "#ef4444", "bg": "#fef2f2", "text": "#7f1d1d"}
+        }.get(pod, {"border": "#633094", "bg": "#ffffff", "text": "#3b1d58"})
+        
+        with cols[i]:
+            is_loading = st.session_state.get("current_loading_pod") == pod
+            has_data = f"clusters_{pod}" in st.session_state
+            current_bg = "white" if has_data else colors['bg']
+            
+            st.markdown(f"""
+                <div class='pod-card-pill' style='border: 2px solid {colors['border']}; border-radius: 25px; 
+                            padding: 20px 15px; background: {current_bg}; box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+                            text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
+                    <h4 style='margin: 0; color: {colors['text']}; font-size: 1.1rem; font-weight: 800;'>{pod} Pod</h4>
+            """, unsafe_allow_html=True)
+            
+            if is_loading:
+                st.markdown(f"<p class='loading-pulse' style='color:{colors['border']}; margin-top:15px;'>📡 SYNCING...</p>", unsafe_allow_html=True)
+            elif has_data:
+                pod_cls = st.session_state[f"clusters_{pod}"]
+                st.markdown(f"""
+                    <div style='margin-top: 10px;'>
+                        <p style='margin: 0; font-size: 28px; font-weight: 800; color: {colors['text']};'>{len(pod_cls)}</p>
+                        <p style='margin: -5px 0 10px 0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;'>Active Routes</p>
+                        <div style='display: flex; justify-content: space-around; border-top: 1px solid #f1f5f9;'>
+                            <div style='margin-top:8px;'><p style='margin:0; font-size:9px; color:#94a3b8; font-weight:800;'>TASKS</p><b style='color:{colors['text']};'>{sum(len(c['data']) for c in pod_cls)}</b></div>
+                            <div style='margin-top:8px;'><p style='margin:0; font-size:10px; color:#94a3b8; font-weight:800;'>STOPS</p><b style='color:{colors['text']};'>{sum(c['stops'] for c in pod_cls)}</b></div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+                for c in pod_cls: folium.CircleMarker(c['center'], radius=5, color=colors['border'], fill=True, fill_opacity=0.6).add_to(global_map)
+            else:
+                st.markdown(f"<p style='color: #cbd5e1; font-weight: 700; margin-top: 20px; font-size: 13px;'>OFFLINE</p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    # 3. THE LOADING ZONE (Progress Bar moves here)
+    if st.session_state.get("trigger_pull"):
         st.session_state.sent_db = fetch_sent_records_from_sheet()
-        master_prog = st.progress(0, text="🎬 Starting Global Data Pull...")
-        all_pods = list(POD_CONFIGS.keys())
-        for i, p in enumerate(all_pods):
-            process_pod(p, master_bar=master_prog, pod_idx=i, total_pods=len(all_pods))
-        master_prog.progress(1.0, text="✅ Data Pull Completed!")
-        time.sleep(1)
+        prog_bar = st.progress(0, text="🎬 Initializing Global Data...")
+        for idx, p in enumerate(pod_keys):
+            st.session_state.current_loading_pod = p 
+            process_pod(p, master_bar=prog_bar, pod_idx=idx, total_pods=len(pod_keys))
+        st.session_state.current_loading_pod = None
+        st.session_state.trigger_pull = False
         st.rerun()
 
-    # --- 2. GLOBAL AGGREGATION LOGIC ---
-    initialized_pods = [p for p in POD_CONFIGS.keys() if f"clusters_{p}" in st.session_state]
-    
-    if initialized_pods:
-        st.markdown("---")
-        
-        # We'll create a row of cards for the pods that have data
-        # Using columns to create a "Dashboard" feel
-        cols = st.columns(len(POD_CONFIGS))
-        
-        global_map = folium.Map(location=[39.8283, -98.5795], zoom_start=4, tiles="cartodbpositron")
-        
-        for i, pod in enumerate(POD_CONFIGS.keys()):
-            with cols[i]:
-                # Pod-specific styling based on the name
-                color_hex = {"Blue": "#3b82f6", "Green": "#22c55e", "Orange": "#f97316", "Purple": "#a855f7", "Red": "#ef4444"}.get(pod, "#000000")
-                
-                if pod in initialized_pods:
-                    pod_cls = st.session_state[f"clusters_{pod}"]
-                    p_tasks = sum(len(c['data']) for c in pod_cls)
-                    p_stops = sum(c['stops'] for c in pod_cls)
-                    p_routes = len(pod_cls)
-                    
-                    st.markdown(f"""
-                        <div style='background: white; border-top: 5px solid {color_hex}; border-radius: 10px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;'>
-                            <h4 style='margin: 0; color: {color_hex};'>{pod} Pod</h4>
-                            <p style='margin: 5px 0 0 0; font-size: 22px; font-weight: 800;'>{p_routes} <span style='font-size: 12px; color: #64748b;'>Routes</span></p>
-                            <hr style='margin: 10px 0;'>
-                            <div style='display: flex; justify-content: space-around;'>
-                                <div><p style='margin:0; font-size:10px; color:#94a3b8;'>TASKS</p><b>{p_tasks}</b></div>
-                                <div><p style='margin:0; font-size:10px; color:#94a3b8;'>STOPS</p><b>{p_stops}</b></div>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Add this pod's data to the global map
-                    for c in pod_cls:
-                        folium.CircleMarker(
-                            c['center'], 
-                            radius=6, 
-                            color=color_hex, 
-                            fill=True, 
-                            fill_opacity=0.6,
-                            popup=f"{pod} Pod: {c['city']}, {c['state']}"
-                        ).add_to(global_map)
-                else:
-                    # Placeholder for uninitialized pods
-                    st.markdown(f"""
-                        <div style='background: #f1f5f9; border-radius: 10px; padding: 15px; text-align: center; border: 1px dashed #cbd5e1; opacity: 0.6;'>
-                            <h4 style='margin: 0; color: #64748b;'>{pod}</h4>
-                            <p style='margin: 5px 0 0 0; font-size: 12px; color: #94a3b8;'>Offline</p>
-                        </div>
-                    """, unsafe_allow_html=True)
-
-        # --- 3. MASTER MAP ---
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🗺️ Master Route Map")
-        st_folium(global_map, height=500, use_container_width=True, key="global_overview_map")
-    else:
-        st.info("No pod data initialized yet. Click the button above to pull the global data.")
+    # 4. MASTER MAP
+    st.markdown("<br>### 🗺️ Master Route Map", unsafe_allow_html=True)
+    st_folium(global_map, height=500, use_container_width=True, key="global_overview_map")
 
 for i, pod in enumerate(["Blue", "Green", "Orange", "Purple", "Red"], 1):
     with tabs[i]: run_pod_tab(pod)
