@@ -256,26 +256,29 @@ iframe[title="streamlit_folium.st_folium"] {{
 
 /* =========================================
    THE COOL PURPLE GLOW (Hover Effects)
-   Applies to Cards, Expanders, and Buttons
+   Applies to Cards, Expanders, Tabs, and Buttons
    ========================================= */
 div[data-testid="stExpander"]:hover,
 .pod-card-pill:hover,
+.dashboard-supercard:hover,
+.stTabs [data-baseweb="tab"]:hover,
 button[kind="primary"]:hover,
 button[kind="secondary"]:hover,
 div.refresh-btn-container > div > button:hover {{
     transform: translateY(-4px) !important;
     box-shadow: 0 12px 28px rgba(99, 48, 148, 0.35) !important;
     border-color: #633094 !important;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     z-index: 10;
 }}
 
-/* Ensure the transition is smooth when the mouse leaves */
+/* Smooth transitions */
 div[data-testid="stExpander"],
 .pod-card-pill,
+.dashboard-supercard,
 button[kind="primary"],
 button[kind="secondary"],
-div.refresh-btn-container > div > button {{
+div.refresh-btn-container > div > button,
+.stTabs [data-baseweb="tab"] {{
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
 }}
 
@@ -797,6 +800,7 @@ def run_pod_tab(pod_name):
     with c1:
         # --- NOW IN C1: TOTAL ROUTES (Ready / Sent / Flagged) ---
         st.markdown(f"""
+            <div class='dashboard-supercard' style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
             <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
                 <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Total Routes: {total_routes}</p>
                 <div style='display:flex; justify-content:space-between; gap:8px;'>
@@ -819,6 +823,7 @@ def run_pod_tab(pod_name):
     with c2:
         # --- NOW IN C2: TOTAL TASKS & STOPS ---
         st.markdown(f"""
+            <div class='dashboard-supercard' style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
             <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
                 <div style='display:flex; justify-content:space-around; text-align:center; height:100%; align-items:center;'>
                     <div>
@@ -837,6 +842,7 @@ def run_pod_tab(pod_name):
     with c3:
         # --- C3 STAYS THE SAME: DISPATCH TRACKING ---
         st.markdown(f"""
+            <div class='dashboard-supercard' style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); margin-bottom:20px; height: 110px;'>
             <div style='background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05); height: 110px;'>
                 <p style='margin:0 0 5px 0; font-size:11px; font-weight:800; color:#000000; text-transform:uppercase; text-align:center;'>Dispatched Tracking: {total_dispatched}</p>
                 <div style='display:flex; justify-content:space-between; gap:8px;'>
@@ -1128,8 +1134,8 @@ with tabs[0]:
 
             # --- RENDER THE PILL (Entire string Flushed Left) ---
             st.markdown(f"""
-<div style="border: 2px solid {colors['border']}; border-radius: 30px; padding: 20px 10px; background-color: {colors['bg']}; text-align: center; height: 190px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: center;">
-<h3 style="margin: 0; color: {colors['text']} !important; font-weight: 800; font-size: 1.2rem;">{pod} Pod</h3>
+<div class="pod-card-pill" style="border: 2px solid {colors['border']}; border-radius: 30px; padding: 20px 10px; background-color: {colors['bg']}; text-align: center; height: 190px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: center;">
+<h3 style="margin: 0; color: {colors['text']}; font-weight: 800; font-size: 1.2rem;">{pod} Pod</h3>
 {card_content}
 </div>
 """, unsafe_allow_html=True)
