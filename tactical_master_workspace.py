@@ -830,17 +830,19 @@ def run_pod_tab(pod_name):
                 task_ids = [str(t['id']).strip() for t in c['data']]
                 cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
                 
-                # Split the layout: Expander on the left (80%), Button on the right (20%)
-                exp_col, btn_col = st.columns([5, 1])
+                # Split the layout: Gave the button slightly more breathing room
+                exp_col, btn_col = st.columns([4.5, 1.5])
                 
                 with exp_col:
                     with st.expander(f"✉️ {ic_name}{ts_label} | {c['city']}, {c['state']}{esc_pill}"): 
                         render_dispatch(i+500, c, pod_name, is_sent=True)
                         
                 with btn_col:
-                    # A tiny top margin to vertically align the button with the expander box
-                    st.markdown("<div style='margin-top: 2px;'></div>", unsafe_allow_html=True)
-                    if st.button("↩️ Revoke", key=f"quick_rev_{cluster_hash}", help="Pull this route back to Dispatch"):
+                    # Increased the top margin to shove the button down into alignment
+                    st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
+                    
+                    # Added use_container_width=True to make it fill the space evenly
+                    if st.button("↩️ Revoke", key=f"quick_rev_{cluster_hash}", help="Pull this route back to Dispatch", use_container_width=True):
                         # Log the previous contractor
                         hist = st.session_state.get(f"history_{cluster_hash}", [])
                         hist.append(f"{ic_name} ({datetime.now().strftime('%m/%d')})")
