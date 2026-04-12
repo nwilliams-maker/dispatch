@@ -97,12 +97,12 @@ button[kind="primary"]:hover {{
     box-shadow: 0 6px 10px rgba(0,0,0,0.15) !important;
 }}
 
-/* NESTED SUB-TABS OVERRIDE */
-div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(1) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }}
-div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(2) {{ background-color: {TB_BLUE_FILL} !important; color: #000000 !important; }}
-div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(3) {{ background-color: {TB_RED_FILL} !important; color: #000000 !important; }}
-div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(5) {{ background-color: {TB_GREEN_FILL} !important; color: #000000 !important; }}
-div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(6) {{ background-color: {TB_RED_FILL} !important; color: #000000 !important; }}
+/* NESTED SUB-TABS OVERRIDE (Clean Horizontal Grouping) */
+div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(1) { background-color: #dcfce7 !important; color: #000000 !important; } /* Ready: Green */
+div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(2) { background-color: #ffcccc !important; color: #000000 !important; margin-right: 40px !important; } /* Flagged: Red + GAP */
+div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(3) { background-color: #dbeafe !important; color: #000000 !important; } /* Sent: Blue */
+div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(4) { background-color: #dcfce7 !important; color: #000000 !important; } /* Accepted: Green */
+div[data-testid="stTabs"] div[data-testid="stTabs"] [data-baseweb="tab"]:nth-of-type(5) { background-color: #ffcccc !important; color: #000000 !important; } /* Declined: Red */
 
 /* CARDS & INPUTS */
 div[data-testid="stExpander"],
@@ -731,65 +731,53 @@ def run_pod_tab(pod_name):
     """, unsafe_allow_html=True)
     st.markdown("---")
 
-    t1, t2, t3, gap, t4, t5, end_gap = st.tabs([
+    t_ready, t_flagged, t_sent, t_acc, t_dec = st.tabs([
         "📥 Dispatch Ready", 
-        "✉️ Sent (Pending)", 
         "⚠️ Flagged",
-        " ", 
+        "✉️ Sent (Pending)", 
         "✅ Accepted", 
-        "❌ Declined",
-        " "
+        "❌ Declined"
     ])
 
-    with t1:
+    with t_ready:
         if not ready: st.info("No tasks ready for dispatch.")
         for i, c in enumerate(ready):
-            # --- 1. PRE-CALCULATE BADGES FOR SCAN-ABILITY ---
+            # --- PRE-CALCULATE BADGES ---
             badges = ""
             if not ic_df.empty:
-                # Filter for valid contractors
                 v_ics = ic_df[~ic_df.astype(str).apply(lambda x: x.str.contains('Field Agent', case=False, na=False).any(), axis=1)].dropna(subset=['Lat', 'Lng']).copy()
-                
                 if not v_ics.empty:
-                    # Calculate distances
                     v_ics['d'] = v_ics.apply(lambda x: haversine(c['center'][0], c['center'][1], x['Lat'], x['Lng']), axis=1)
                     closest_ic = v_ics.sort_values('d').iloc[0]
-                    
-                    # Estimate pricing for badge logic
                     _, hrs, _ = get_gmaps(closest_ic['Location'], [t['full'] for t in c['data'][:25]])
                     est_pay = max(c['stops'] * 18.0, hrs * 25.0)
                     est_rate = est_pay / c['stops'] if c['stops'] > 0 else 0
                     
-                    # Apply Badges
                     if est_rate >= 25.0: badges += " 💰"
                     if closest_ic['d'] > 60: badges += " 📡"
                     if est_rate >= 25.0 or closest_ic['d'] > 60: badges = " 🔒" + badges
 
             esc_pill = f"  [ ⭐ {c.get('esc_count', 0)} ]" if c.get('esc_count', 0) > 0 else ""
-            
-            # Render expander with the new badges
             with st.expander(f"{badges} 📍 {c['city']}, {c['state']} | {c['stops']} Stops{esc_pill}"): 
                 render_dispatch(i, c, pod_name)
-    with t2:
+                
+    with t_flagged:
+        if not review: st.info("No flagged tasks requiring review.")
+        for i, c in enumerate(review):
+            esc_pill = f"  [ ⭐ {c.get('esc_count', 0)} ]" if c.get('esc_count', 0) > 0 else ""
+            with st.expander(f"🔒 🔴 {c['city']}, {c['state']} | {c['stops']} Stops{esc_pill}"): 
+                render_dispatch(i+1000, c, pod_name)
+
+    with t_sent:
         if not sent: st.info("No pending routes sent.")
         for i, c in enumerate(sent):
             ic_name = c.get('contractor_name', 'Unknown')
             ts_label = f" | {c.get('route_ts', '')}" if c.get('route_ts') else ""
             esc_pill = f"  [ ⭐ {c.get('esc_count', 0)} ]" if c.get('esc_count', 0) > 0 else ""
-            # Sent routes get a paper plane icon
             with st.expander(f"✉️ {ic_name}{ts_label} | {c['city']}, {c['state']}{esc_pill}"): 
                 render_dispatch(i+500, c, pod_name, is_sent=True)
-            
-    with t3:
-        if not review: st.info("No flagged tasks requiring review.")
-        for i, c in enumerate(review):
-            # Flagged routes always start with a lock and a red circle
-            esc_pill = f"  [ ⭐ {c.get('esc_count', 0)} ]" if c.get('esc_count', 0) > 0 else ""
-            with st.expander(f"🔒 🔴 {c['city']}, {c['state']} | {c['stops']} Stops{esc_pill}"): 
-                render_dispatch(i+1000, c, pod_name)
-    with gap: st.write(" ")
 
-    with t4:
+    with t_acc:
         if not accepted: st.info("Waiting for portal acceptances...")
         for i, c in enumerate(accepted):
             ic_name = c.get('contractor_name', 'Unknown')
@@ -798,7 +786,7 @@ def run_pod_tab(pod_name):
                 st.success(f"Route accepted. Onfleet assignment should be complete.")
                 render_dispatch(i+2000, c, pod_name, is_sent=True)
 
-    with t5:
+    with t_dec:
         if not declined: st.info("No declined routes.")
         for i, c in enumerate(declined):
             ic_name = c.get('contractor_name', 'Unknown')
