@@ -66,6 +66,29 @@ st.markdown(f"""
 
 h1, h2, h3, h4, h5, h6 {{ color: #633094 !important; font-weight: 800 !important; }}
 
+/* Modern Condensed Refresh Button */
+div.refresh-btn-container > div > button {{
+    height: 32px !important;
+    padding: 0 15px !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    border-radius: 30px !important; /* Pill Shape */
+    border: 1.5px solid #633094 !important;
+    background-color: transparent !important;
+    color: #633094 !important;
+    font-weight: 700 !important;
+    transition: all 0.3s ease !important;
+    width: auto !important;
+    float: right; /* Aligns it to the right of the column */
+}}
+
+div.refresh-btn-container > div > button:hover {{
+    background-color: #633094 !important;
+    color: white !important;
+    box-shadow: 0 4px 10px rgba(99, 48, 148, 0.2) !important;
+    transform: translateY(-1px);
+}}
+
 /* GLOBAL TABS STYLING */
 .stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 10px; border-radius: 15px; }}
 .stTabs [data-baseweb="tab"] {{ border-radius: 10px !important; padding: 10px 20px !important; font-weight: 700 !important; }}
@@ -960,11 +983,12 @@ with col_title:
     st.markdown(f"<h1 style='margin-top: -10px;'>Terraboost Media: Operations Dispatch Command Center</h1>", unsafe_allow_html=True)
 
 with col_ref:
-    # Adding a bit of padding to line up the button with the text
-    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-    if st.button("🔄 Refresh Data", use_container_width=True, help="Wipe cache and force fresh pull from Sheets/Onfleet"):
-        st.cache_data.clear()  # Wipes the 15s and 600s caches instantly
+    # Increased margin slightly to 22px to perfectly center with the purple title
+    st.markdown("<div style='margin-top: 22px;' class='refresh-btn-container'>", unsafe_allow_html=True)
+    if st.button("🔄 Refresh", key="top_ref_btn"):
+        st.cache_data.clear()
         st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Define tabs once for the entire app
 tabs = st.tabs(["Global", "Blue", "Green", "Orange", "Purple", "Red"])
