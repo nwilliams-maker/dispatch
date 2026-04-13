@@ -193,6 +193,42 @@ div.element-container:has(.flush-hook) {{
     padding: 0px !important;
 }}
 
+/* Force all nested tabs into individual Pills */
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab-list"],
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{ 
+    gap: 12px !important; 
+    background: transparent !important; 
+}}
+
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"],
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
+    border-radius: 30px !important;
+    border: 2px solid transparent !important;
+    padding: 8px 18px !important;
+    height: auto !important;
+    min-height: 0 !important;
+}}
+
+/* Hide grey highlight bar */
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab-highlight"],
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{ display: none !important; }}
+
+/* LEFT COLUMN COLORS: Ready (Green) & Flagged (Red) */
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
+
+/* RIGHT COLUMN COLORS: Sent (Blue), Accepted (Green), Declined (Red) */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
+
+/* Color for Flagged Tab (Left Column - 2nd Tab) */
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{
+    border-color: #ef4444 !important; 
+    color: #7f1d1d !important; 
+    background-color: #fef2f2 !important; /* Light Red Fill */
+}}
+
 /* Forces Awaiting tabs into individual Pills */
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{ gap: 12px !important; background: transparent !important; }}
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
@@ -206,8 +242,20 @@ div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-bas
 
 /* Pill Colors for Awaiting Column */
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }}
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
+
+/* Accepted Tab (Right Column - 2nd Tab) */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ 
+    border-color: #22c55e !important; 
+    color: #064e3b !important; 
+    background-color: #f0fdf4 !important; /* Light Green Fill */
+}}
+
+/* Declined Tab (Right Column - 3rd Tab) */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{ 
+    border-color: #ef4444 !important; 
+    color: #7f1d1d !important; 
+    background-color: #fef2f2 !important; /* Light Red Fill */
+}}
 
 /* 7. PRIMARY & SECONDARY BUTTON BASICS */
 button[kind="primary"] {{ background-color: {TB_GREEN} !important; color: white !important; height: 3.5rem !important; font-size: 1.2rem !important; font-weight: 800 !important; border: none !important; }}
