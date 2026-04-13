@@ -442,6 +442,44 @@ div.element-container:has(.flush-hook) {{
     padding: 0px !important;
 }}
 
+/* SURGICAL BYPASS FOR AWAITING CONFIRMATION TABS */
+
+/* 1. Target the 'Awaiting' container to add a gap between pills */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{
+    gap: 12px !important;
+    background: transparent !important;
+}}
+
+/* 2. Target the individual tabs to force all 4 corners to round */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
+    border-radius: 30px !important;
+    border-top-left-radius: 30px !important;
+    border-bottom-left-radius: 30px !important;
+    border-top-right-radius: 30px !important;
+    border-bottom-right-radius: 30px !important;
+    margin: 0 !important;
+    padding: 8px 18px !important;
+    border: 2px solid transparent !important;
+    height: auto !important;
+    min-height: 0 !important;
+}}
+
+/* 3. Delete the grey underline highlight that connects them */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{
+    display: none !important;
+}}
+
+/* 4. Apply status colors specifically to these pills */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{
+    border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; /* Sent */
+}}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{
+    border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; /* Accepted */
+}}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{
+    border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; /* Declined */
+}}
+
 </style>
 """, unsafe_allow_html=True)
 
