@@ -230,21 +230,37 @@ div[data-testid="stExpander"] {{
     overflow: hidden !important;
 }}
 
-/* 2. MATCH HEIGHTS: Lock Expander Header to match the Button */
+/* 1. MATCH HEIGHTS: Lock EVERY Expander Header to exactly match the button */
+div[data-testid="stExpander"] {{ 
+    border: 1px solid #cbd5e1 !important; 
+    border-radius: 10px !important; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+    margin-bottom: 0px !important; 
+    background-color: #ffffff !important;
+    overflow: hidden !important;
+}}
+
+/* This targets the clickable header part specifically */
 div[data-testid="stExpander"] details summary {{
-    height: 48px !important;
+    height: 48px !important;      /* Match the 48px button height */
     min-height: 48px !important;
     padding-top: 0px !important;
     padding-bottom: 0px !important;
-}}
-div[data-testid="stExpander"] details summary p {{
-    margin: 0 !important; /* Centers text vertically */
+    display: flex !important;
+    align-items: center !important;
 }}
 
-/* 3. SQUASH VERTICAL GAPS (Consolidated & Cleaned) */
+/* 2. LEVEL THE PLAYING FIELD: Squash the gaps for both sides identically */
+/* This ensures the 'stacking' distance is the same regardless of button presence */
 div.element-container:has(div[data-testid="stExpander"]),
-div[data-testid="stHorizontalBlock"]:has(.expander-hook) {{
-    margin-bottom: -14px !important;
+div.element-container:has(div[data-testid="stHorizontalBlock"]:has(.expander-hook)) {{
+    margin-bottom: -15px !important; /* Slightly more aggressive to close the gap */
+}}
+
+/* 3. CENTER TEXT: Ensure labels inside expanders don't sit too high */
+div[data-testid="stExpander"] details summary p {{
+    margin: 0 !important; 
+    line-height: 48px !important; 
 }}
 
 /* 4. PERFECT ROW ALIGNMENT */
