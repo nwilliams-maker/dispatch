@@ -256,24 +256,25 @@ div[data-testid="stHorizontalBlock"]:has(.flush-hook) {{
     align-items: flex-start !important; /* Anchors the button to the top */
 }}
 
-/* 5. FLUSH BUTTON MECHANICS (Closes the gap between Card and Button) */
+/* 2. FLUSH BUTTON MECHANICS */
 div[data-testid="stColumn"]:has(.flush-hook) {{
-    padding-left: 0px !important; /* Kills the column gap */
+    padding-left: 0px !important;
 }}
 
 div[data-testid="stColumn"]:has(.flush-hook) button {{
-    width: calc(100% + 5px) !important;
-    margin-left: -5px !important; /* Pulls it tight against the expander */
+    width: calc(100% + 1rem) !important; /* Bridges the column gap */
+    margin-left: -1rem !important; 
     border-top-left-radius: 0px !important;
     border-bottom-left-radius: 0px !important;
-    height: 48px !important; /* Locks height to perfectly match expander */
+    border-left: none !important; /* Removes the double border */
+    height: 48px !important;
 }}
 
-/* Square off the right side of the expander to connect to the button */
+/* Square off the right side of the expander so it meets the button */
 div[data-testid="stColumn"]:has(.expander-hook) div[data-testid="stExpander"] {{
     border-top-right-radius: 0px !important;
     border-bottom-right-radius: 0px !important;
-    border-right: none !important; /* Prevents double-thick borders where they touch */
+    border-right: none !important; 
 }}
 
 /* Header text color */
@@ -381,16 +382,18 @@ div[data-testid="stColumn"] div[data-baseweb="tab-list"] {{
     border-bottom: none !important;
 }}
 
-/* Force all 4 corners to be rounded (breaking Streamlit's glued block) */
+/* 3. INDIVIDUAL ROUNDED PILLS */
 div[data-testid="stColumn"] div[data-baseweb="tab"] {{
     border-radius: 30px !important;
+    /* Explicitly round every corner to break the segmented glue */
     border-top-left-radius: 30px !important;
     border-bottom-left-radius: 30px !important;
     border-top-right-radius: 30px !important;
     border-bottom-right-radius: 30px !important;
     padding: 8px 18px !important;
-    margin: 0 5px !important; /* <--- ADD A SMALL SIDE MARGIN HERE */
+    margin: 0 4px !important; /* Adds a tiny gap between pills */
     border: 2px solid transparent !important;
+    height: auto !important;
 }}
 
 /* Hide the native grey connecting slider */
@@ -416,6 +419,18 @@ div[data-testid="stColumn"] div[data-baseweb="tab"][aria-selected="true"] {{
 /* =========================================
    FIX VERTICAL OFFSET (Hide the Invisible Hooks)
    ========================================= */
+div.element-container:has(.dispatch-tabs-hook),
+div.element-container:has(.awaiting-tabs-hook),
+div.element-container:has(.expander-hook),
+div.element-container:has(.flush-hook) {{
+    position: absolute !important;
+    visibility: hidden !important;
+    height: 0px !important;
+    margin: 0px !important;
+    padding: 0px !important;
+}}
+
+/* 1. COLLAPSE INVISIBLE HOOKS TO ALIGN COLUMNS */
 div.element-container:has(.dispatch-tabs-hook),
 div.element-container:has(.awaiting-tabs-hook),
 div.element-container:has(.expander-hook),
