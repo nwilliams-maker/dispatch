@@ -1218,7 +1218,7 @@ def run_pod_tab(pod_name):
                 cluster_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
                 
                 # Gives the button enough room to stay on one line, and vertically centers them
-exp_col, btn_col = st.columns([8.2, 1.8], vertical_alignment="center")
+                exp_col, btn_col = st.columns([8.2, 1.8], vertical_alignment="center")
                 with exp_col:
                     st.markdown("<div class='expander-hook' style='display:none;'></div>", unsafe_allow_html=True)
                     with st.expander(f"✅ {ic_name}{ts_label} | {c['city']}, {c['state']}"):
@@ -1264,7 +1264,7 @@ exp_col, btn_col = st.columns([8.2, 1.8], vertical_alignment="center")
                 
                 # Use the exact same [5, 1] layout as the Sent tab
                 # Gives the button enough room to stay on one line, and vertically centers them
-exp_col, btn_col = st.columns([8.2, 1.8], vertical_alignment="center")
+                exp_col, btn_col = st.columns([8.2, 1.8], vertical_alignment="center")
                 
                 with exp_col:
                     # Hidden hook to square off the right side of the expander
