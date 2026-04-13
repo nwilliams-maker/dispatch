@@ -87,39 +87,16 @@ st.markdown(f"""
 /* 1. GLOBAL APP SETTINGS */
 .stApp {{ background-color: {TB_APP_BG} !important; color: #000000 !important; font-family: 'Inter', sans-serif !important; }}
 .main .block-container {{ max-width: 1100px !important; padding-top: 2rem; }}
-
 h1, h2, h3, h4, h5, h6 {{ font-weight: 800 !important; text-align: center !important; width: 100%; }}
 label, div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 600 !important; }}
 
 /* 2. TOP-LEVEL GLOBAL TABS (POD NAVIGATION) */
-.stTabs [data-baseweb="tab-list"] {{ 
-    justify-content: center; 
-    gap: 12px; 
-    background: transparent !important; 
-    padding: 15px 15px 20px 15px !important; 
-    border-bottom: 2px solid #cbd5e1 !important; 
-    margin-bottom: 15px !important; 
-}}
-
+.stTabs [data-baseweb="tab-list"] {{ justify-content: center; gap: 12px; background: transparent !important; padding: 15px 15px 20px 15px !important; border-bottom: 2px solid #cbd5e1 !important; margin-bottom: 15px !important; }}
 .stTabs [data-baseweb="tab-highlight"] {{ background-color: transparent !important; }}
+.stTabs [data-baseweb="tab"] {{ border-radius: 30px !important; margin: 0 5px !important; font-weight: 800 !important; padding: 8px 25px !important; border: 2px solid transparent !important; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important; }}
+.stTabs [aria-selected="true"] {{ background-color: #ffffff !important; transform: translateY(-4px) !important; box-shadow: 0 10px 20px rgba(99, 48, 148, 0.25) !important; }}
 
-.stTabs [data-baseweb="tab"] {{
-    border-radius: 30px !important;
-    margin: 0 5px !important;
-    font-weight: 800 !important;
-    padding: 8px 25px !important;
-    border: 2px solid transparent !important;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-}}
-
-/* Active Pod Tab State */
-.stTabs [aria-selected="true"] {{ 
-    background-color: #ffffff !important;
-    transform: translateY(-4px) !important;
-    box-shadow: 0 10px 20px rgba(99, 48, 148, 0.25) !important; 
-}}
-
-/* Pod Tab Color Mapping */
+/* Pod Colors */
 .stTabs [data-baseweb="tab"]:nth-of-type(1) {{ border-color: {TB_PURPLE} !important; color: #3b1d58 !important; background: white !important; }}
 .stTabs [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #3b82f6 !important; background-color: #f0f7ff !important; color: #1e3a8a !important; }}
 .stTabs [data-baseweb="tab"]:nth-of-type(3) {{ border-color: #22c55e !important; background-color: #f0fdf4 !important; color: #064e3b !important; }}
@@ -129,158 +106,55 @@ label, div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-wei
 
 /* 3. REFRESH BUTTON */
 div.refresh-btn-container {{ display: flex; justify-content: flex-end; width: 100%; }}
-div.refresh-btn-container > div > button {{
-    height: 28px !important; padding: 0 12px !important; font-size: 12px !important; border-radius: 20px !important;
-    border: 1.2px solid {TB_PURPLE} !important; background-color: transparent !important; color: {TB_PURPLE} !important; font-weight: 700 !important;
-}}
+div.refresh-btn-container > div > button {{ height: 28px !important; padding: 0 12px !important; font-size: 12px !important; border-radius: 20px !important; border: 1.2px solid {TB_PURPLE} !important; background-color: transparent !important; color: {TB_PURPLE} !important; font-weight: 700 !important; }}
 
 /* 4. EXPANDERS & VERTICAL GAP SQUASH */
-div[data-testid="stExpander"] {{ 
-    border: 1px solid #cbd5e1 !important; 
-    border-radius: 10px !important; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
-    margin-bottom: 0px !important; 
-    background-color: #ffffff !important;
-    overflow: hidden !important;
-}}
-
-div[data-testid="stExpander"] details summary {{
-    height: 48px !important;      
-    min-height: 48px !important;
-    padding: 0 10px !important;
-    display: flex !important;
-    align-items: center !important;
-}}
-
+div[data-testid="stExpander"] {{ border: 1px solid #cbd5e1 !important; border-radius: 10px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important; margin-bottom: 0px !important; background-color: #ffffff !important; overflow: hidden !important; }}
+div[data-testid="stExpander"] details summary {{ height: 48px !important; min-height: 48px !important; padding: 0 10px !important; display: flex !important; align-items: center !important; }}
 div[data-testid="stExpander"] details summary p {{ margin: 0 !important; line-height: 48px !important; font-weight: 800 !important; color: #000000 !important; font-size: 0.95rem !important; }}
 div[data-testid="stExpander"] details summary:hover {{ background-color: #fcfaff !important; }}
-div[data-testid="stExpander"] details summary:hover p {{ color: {TB_PURPLE} !important; }}
+div.element-container:has(div[data-testid="stExpander"]), div.element-container:has(div[data-testid="stHorizontalBlock"]:has(.flush-hook)) {{ margin-bottom: -15px !important; }}
 
-/* Pull rows tight together globally */
-div.element-container:has(div[data-testid="stExpander"]),
-div.element-container:has(div[data-testid="stHorizontalBlock"]:has(.expander-hook)) {{
-    margin-bottom: -15px !important;
-}}
-
-/* 5. FLUSH BUTTON MECHANICS (Connects Revoke to Card) */
+/* 5. FLUSH BUTTON MECHANICS (Revoke Button) */
 div[data-testid="stHorizontalBlock"]:has(.flush-hook) {{ align-items: flex-start !important; }}
 div[data-testid="stColumn"]:has(.flush-hook) {{ padding-left: 0px !important; }}
-
-div[data-testid="stColumn"]:has(.flush-hook) button {{
-    width: calc(100% + 1rem) !important;
-    margin-left: -1rem !important; 
-    border-top-left-radius: 0px !important;
-    border-bottom-left-radius: 0px !important;
-    border-left: none !important;
-    height: 48px !important;
-}}
-
-div[data-testid="stColumn"]:has(.expander-hook) div[data-testid="stExpander"] {{
-    border-top-right-radius: 0px !important;
-    border-bottom-right-radius: 0px !important;
-    border-right: none !important; 
-}}
+div[data-testid="stColumn"]:has(.flush-hook) button {{ width: calc(100% + 1rem) !important; margin-left: -1rem !important; border-top-left-radius: 0px !important; border-bottom-left-radius: 0px !important; border-left: none !important; height: 48px !important; }}
+div[data-testid="stColumn"]:has(.expander-hook) div[data-testid="stExpander"] {{ border-top-right-radius: 0px !important; border-bottom-right-radius: 0px !important; border-right: none !important; }}
 
 /* 6. ALIGN COLUMNS & NESTED TAB BYPASS */
 div.element-container:has(.dispatch-tabs-hook),
 div.element-container:has(.awaiting-tabs-hook),
 div.element-container:has(.expander-hook),
-div.element-container:has(.flush-hook) {{
-    position: absolute !important;
-    visibility: hidden !important;
-    height: 0px !important;
-    margin: 0px !important;
-    padding: 0px !important;
-}}
+div.element-container:has(.flush-hook) {{ position: absolute !important; visibility: hidden !important; height: 0px !important; margin: 0px !important; padding: 0px !important; }}
 
-/* Force all nested tabs into individual Pills */
+/* Un-glue nested tabs into individual Pills */
 div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab-list"],
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{ 
-    gap: 12px !important; 
-    background: transparent !important; 
-}}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{ gap: 12px !important; background: transparent !important; }}
 
 div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"],
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
-    border-radius: 30px !important;
-    border: 2px solid transparent !important;
-    padding: 8px 18px !important;
-    height: auto !important;
-    min-height: 0 !important;
-}}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{ border-radius: 30px !important; border: 2px solid transparent !important; padding: 8px 18px !important; height: auto !important; min-height: 0 !important; }}
 
-/* Hide grey highlight bar */
 div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab-highlight"],
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{ display: none !important; }}
 
-/* LEFT COLUMN COLORS: Ready (Green) & Flagged (Red) */
+/* NESTED TAB COLORS (Dispatch & Awaiting Confirmation) */
+/* Left Column (Ready / Flagged) */
 div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
 div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
 
-/* RIGHT COLUMN COLORS: Sent (Blue), Accepted (Green), Declined (Red) */
+/* Right Column (Sent / Accepted / Declined) */
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }}
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
 
-/* Color for Flagged Tab (Left Column - 2nd Tab) */
-div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{
-    border-color: #ef4444 !important; 
-    color: #7f1d1d !important; 
-    background-color: #fef2f2 !important; /* Light Red Fill */
-}}
+/* 7. UNIFIED HOVER & CLICK EFFECTS */
+button:hover, .stTabs [data-baseweb="tab"]:hover {{ transform: translateY(-4px) !important; box-shadow: 0 12px 28px rgba(99, 48, 148, 0.35) !important; }}
+div[data-testid="stExpander"]:hover, .pod-card-pill:hover, .dashboard-supercard:hover {{ transform: translateY(-4px) !important; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08) !important; }}
+button:active, div[data-testid="stExpander"] details summary:active, .stTabs [data-baseweb="tab"]:active {{ transform: translateY(0px) scale(1) !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important; }}
 
-/* Forces Awaiting tabs into individual Pills */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{ gap: 12px !important; background: transparent !important; }}
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
-    border-radius: 30px !important;
-    border: 2px solid transparent !important;
-    padding: 8px 18px !important;
-    height: auto !important;
-    min-height: 0 !important;
-}}
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{ display: none !important; }}
-
-/* Pill Colors for Awaiting Column */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }}
-
-/* Accepted Tab (Right Column - 2nd Tab) */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ 
-    border-color: #22c55e !important; 
-    color: #064e3b !important; 
-    background-color: #f0fdf4 !important; /* Light Green Fill */
-}}
-
-/* Declined Tab (Right Column - 3rd Tab) */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{ 
-    border-color: #ef4444 !important; 
-    color: #7f1d1d !important; 
-    background-color: #fef2f2 !important; /* Light Red Fill */
-}}
-
-/* 7. PRIMARY & SECONDARY BUTTON BASICS */
-button[kind="primary"] {{ background-color: {TB_GREEN} !important; color: white !important; height: 3.5rem !important; font-size: 1.2rem !important; font-weight: 800 !important; border: none !important; }}
-button[kind="secondary"] {{ background-color: #ffffff !important; color: {TB_PURPLE} !important; border: 2px solid {TB_PURPLE} !important; font-weight: 800 !important; border-radius: 8px !important; }}
-
-/* 8. UNIFIED HOVER & CLICK EFFECTS */
-button:hover, div.refresh-btn-container > div > button:hover, .stTabs [data-baseweb="tab"]:hover {{
-    transform: translateY(-4px) !important;
-    box-shadow: 0 12px 28px rgba(99, 48, 148, 0.35) !important;
-}}
-
-div[data-testid="stExpander"]:hover, .pod-card-pill:hover, .dashboard-supercard:hover {{
-    transform: translateY(-4px) !important;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08) !important; 
-}}
-
-button:active, div[data-testid="stExpander"] details summary:active, .stTabs [data-baseweb="tab"]:active {{
-    transform: translateY(0px) scale(1) !important; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
-}}
-
-/* 9. OTHER UI ELEMENTS */
+/* 8. OTHER UI ELEMENTS */
 iframe[title="streamlit_folium.st_folium"] {{ border-radius: 15px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important; }}
 .stFolium {{ background: transparent !important; }}
-
 </style>
 """, unsafe_allow_html=True)
 
