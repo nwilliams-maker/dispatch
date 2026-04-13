@@ -242,25 +242,13 @@ div[data-testid="stExpander"] {{
 
 /* This targets the clickable header part specifically */
 div[data-testid="stExpander"] details summary {{
-    height: 48px !important;      /* Match the 48px button height */
+    height: 48px !important;      
     min-height: 48px !important;
     padding-top: 0px !important;
     padding-bottom: 0px !important;
     display: flex !important;
     align-items: center !important;
-}}
-
-/* 2. LEVEL THE PLAYING FIELD: Squash the gaps for both sides identically */
-/* This ensures the 'stacking' distance is the same regardless of button presence */
-div.element-container:has(div[data-testid="stExpander"]),
-div.element-container:has(div[data-testid="stHorizontalBlock"]:has(.expander-hook)) {{
-    margin-bottom: -15px !important; /* Slightly more aggressive to close the gap */
-}}
-
-/* 3. CENTER TEXT: Ensure labels inside expanders don't sit too high */
-div[data-testid="stExpander"] details summary p {{
-    margin: 0 !important; 
-    line-height: 48px !important; 
+    line-height: 48px !important; /* <--- ADD THIS LINE SPECIFICALLY */
 }}
 
 /* 4. PERFECT ROW ALIGNMENT */
@@ -401,7 +389,7 @@ div[data-testid="stColumn"] div[data-baseweb="tab"] {{
     border-top-right-radius: 30px !important;
     border-bottom-right-radius: 30px !important;
     padding: 8px 18px !important;
-    margin: 0 !important;
+    margin: 0 5px !important; /* <--- ADD A SMALL SIDE MARGIN HERE */
     border: 2px solid transparent !important;
 }}
 
@@ -423,6 +411,20 @@ div[data-testid="stColumn"]:nth-child(2) div[data-baseweb="tab"]:nth-child(3) {{
 div[data-testid="stColumn"] div[data-baseweb="tab"][aria-selected="true"] {{
     transform: translateY(-2px) !important;
     box-shadow: 0 4px 8px rgba(0,0,0,0.08) !important;
+}}
+
+/* =========================================
+   FIX VERTICAL OFFSET (Hide the Invisible Hooks)
+   ========================================= */
+div.element-container:has(.dispatch-tabs-hook),
+div.element-container:has(.awaiting-tabs-hook),
+div.element-container:has(.expander-hook),
+div.element-container:has(.flush-hook) {{
+    position: absolute !important;
+    visibility: hidden !important;
+    height: 0px !important;
+    margin: 0px !important;
+    padding: 0px !important;
 }}
 
 </style>
