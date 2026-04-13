@@ -405,13 +405,13 @@ div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-bas
 }}
 
 /* Colors - Left Side (Ready / Flagged) */
-div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) { border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }
-div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) { border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
+div.element-container:has(.dispatch-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
 
 /* Colors - Right Side (Sent / Accepted / Declined) */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) { border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) { border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) { border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
 
 /* Active Glow */
 div.element-container:has(.dispatch-tabs-hook) + div.element-container [aria-selected="true"],
@@ -419,9 +419,6 @@ div.element-container:has(.awaiting-tabs-hook) + div.element-container [aria-sel
     transform: translateY(-2px) !important;
     box-shadow: 0 4px 8px rgba(0,0,0,0.08) !important;
 }}
-
-</style>
-""", unsafe_allow_html=True)
 
 def background_sheet_move(cluster_hash, payload_json):
     try:
