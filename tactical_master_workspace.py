@@ -527,13 +527,22 @@ def process_pod(pod_name, master_bar=None, pod_idx=0, total_pods=1):
 
             addr = t.get('destination', {}).get('address', {})
             stt = normalize_state(addr.get('state', ''))
-            is_esc = (c_type == 'TEAM' and container.get('team') in esc_team_ids)
-            if not is_esc:
-                for m in (t.get('metadata') or []):
-                    if 'escalation' in str(m.get('name', '')).lower() and str(m.get('value', '')).strip() in ['1', '1.0', 'true', 'yes']:
-                        is_esc = True; break
             
-            tt_val = str(t.get('taskType', '')).strip() or str(t.get('taskDetails', '')).strip()
+            is_esc = (c_type == 'TEAM' and container.get('team') in esc_team_ids)
+            tt_val = "" # Default to empty
+            
+            # Loop through Onfleet Metadata to find custom fields
+            for m in (t.get('metadata') or []):
+                m_name = str(m.get('name', '')).strip().lower()
+                m_val = str(m.get('value', '')).strip()
+                
+                # Check for Escalations
+                if 'escalation' in m_name and m_val in ['1', '1.0', 'true', 'yes']:
+                    is_esc = True
+                    
+                # Check for Custom Task Type (matches 'Task Type' from Onfleet)
+                if m_name == 'task type':
+                    tt_val = m_val
             
             if stt in config['states']:
                 pool.append({
