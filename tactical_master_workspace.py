@@ -344,7 +344,6 @@ div.refresh-btn-container > div > button,
 
 def background_sheet_move(cluster_hash, payload_json):
     try:
-        # This runs safely in a separate invisible thread
         requests.post(GAS_WEB_APP_URL, json={
             "action": "revokeRoute", 
             "cluster_hash": cluster_hash,
@@ -353,21 +352,58 @@ def background_sheet_move(cluster_hash, payload_json):
     except:
         pass
 
-def instant_revoke_handler(cluster_hash, ic_name, payload_json):
-    # 1. Move the card locally in Streamlit (INSTANT)
-    st.session_state[f"reverted_{cluster_hash}"] = True
-    st.session_state[f"route_state_{cluster_hash}"] = "ready"
-    
-    # 2. Update History
-    hist = st.session_state.get(f"history_{cluster_hash}", [])
-    hist.append(f"{ic_name} ({datetime.now().strftime('%m/%d')} - Revoked)")
-    st.session_state[f"history_{cluster_hash}"] = hist
-    
-    # 3. Visual Confirmation! (Pops up in the bottom right)
-    st.toast("✅ Route instantly pulled back to Dispatch!")
-    
-    # 4. Trigger the safe Background Thread (No more crashing!)
+def scrub_and_revoke_cluster(cluster_hash, ic_name, pod_name, action_label="Revoked"):
+    clusters = st.session_state.get(f"clusters_{pod_name}", [])
+    for c in clusters:
+        task_ids = [str(t['id']).strip() for t in c['data']]
+        old_hash = hashlib.md5("".join(sorted(task_ids)).encode()).hexdigest()
+        
+        if old_hash == cluster_hash:
+            valid_tasks = []
+            
+            # --- LIVE ONFLEET SCRUB ---
+            for t in c['data']:
+                try:
+                    res = requests.get(f"https://onfleet.com/api/v2/tasks/{t['id']}", headers=headers, timeout=5).json()
+                    # Keep if unassigned or Team-assigned (Worker is None)
+                    if res.get('worker') is None:  
+                        valid_tasks.append(t)
+                except:
+                    valid_tasks.append(t)
+            
+            if not valid_tasks:
+                clusters.remove(c)
+                st.toast("✅ Route cleared (All tasks were already assigned).")
+                return
+            
+            c['data'] = valid_tasks
+            c['stops'] = len(set(x['full'] for x in valid_tasks))
+            
+            new_task_ids = [str(t['id']).strip() for t in c['data']]
+            new_hash = hashlib.md5("".join(sorted(new_task_ids)).encode()).hexdigest()
+            
+            # --- GHOST REMOVAL ---
+            # Ensure the route is no longer treated as a "Ghost" so it calculates in Total Tasks
+            if f"is_ghost_{old_hash}" in st.session_state:
+                st.session_state.pop(f"is_ghost_{old_hash}", None)
+
+            st.session_state[f"reverted_{new_hash}"] = True
+            st.session_state[f"route_state_{new_hash}"] = "ready"
+            
+            hist = st.session_state.get(f"history_{old_hash}", [])
+            hist.append(f"{ic_name} ({datetime.now().strftime('%m/%d')} - {action_label})")
+            st.session_state[f"history_{new_hash}"] = hist
+            
+            for key in [f"history_{old_hash}", f"reverted_{old_hash}", f"route_state_{old_hash}", f"sync_{old_hash}"]:
+                st.session_state.pop(key, None)
+                
+            st.toast(f"✅ Route pulled back! ({len(valid_tasks)} tasks added to Dispatch)")
+            st.rerun() # Force a rerun to update the Total Task math immediately
+
+def instant_revoke_handler(cluster_hash, ic_name, payload_json, pod_name):
     threading.Thread(target=background_sheet_move, args=(cluster_hash, payload_json)).start()
+    scrub_and_revoke_cluster(cluster_hash, ic_name, pod_name, "Revoked")
+    
 # --- UTILITIES ---
 def haversine(lat1, lon1, lat2, lon2):
     R = 3958.8
@@ -1132,7 +1168,7 @@ def run_pod_tab(pod_name):
                         "↩️ Revoke", 
                         key=f"instant_rev_{cluster_hash}", 
                         on_click=instant_revoke_handler,
-                        args=(cluster_hash, ic_name, c), # Passing data to the handler
+                        args=(cluster_hash, ic_name, c, pod_name), # Passing data to the handler
                         use_container_width=True
                     )
         with t_acc:
@@ -1156,12 +1192,11 @@ def run_pod_tab(pod_name):
                     st.markdown("<div class='flush-hook' style='display:none;'></div>", unsafe_allow_html=True)
                     with st.popover("↩️ Revoke", use_container_width=True):
                         st.error(f"⚠️ **Revoke from {ic_name}?**\n\nThey have already accepted this route.")
+                        
                         if st.button("🚨 Yes, Revoke", key=f"do_rev_{cluster_hash}", type="primary", use_container_width=True):
-                            hist = st.session_state.get(f"history_{cluster_hash}", [])
-                            hist.append(f"{ic_name} ({datetime.now().strftime('%m/%d')} - Revoked)")
-                            st.session_state[f"history_{cluster_hash}"] = hist
-                            st.session_state[f"reverted_{cluster_hash}"] = True
-                            if f"sync_{cluster_hash}" in st.session_state: del st.session_state[f"sync_{cluster_hash}"]
+                            # This replaces all the manual 'hist' and 'reverted' lines 
+                            # and adds the live Onfleet check
+                            scrub_and_revoke_cluster(cluster_hash, ic_name, pod_name, "Revoked")
                             st.rerun()
 
             # Render Ghost Routes (Tasks already cleared from OnFleet)
@@ -1203,18 +1238,11 @@ def run_pod_tab(pod_name):
                 with btn_col:
                     # Hidden hook to pull the button left and square off its left side
                     st.markdown("<div class='flush-hook' style='display:none;'></div>", unsafe_allow_html=True)
+                    
                     if st.button("↩️ Re-Route", key=f"quick_reroute_{cluster_hash}", help="Pull this declined route back to Dispatch", use_container_width=True):
-                        # Log the previous contractor who declined it
-                        hist = st.session_state.get(f"history_{cluster_hash}", [])
-                        hist.append(f"{ic_name} ({datetime.now().strftime('%m/%d')} - Declined)")
-                        st.session_state[f"history_{cluster_hash}"] = hist
-                        
-                        # Flag as reverted and destroy the old link
-                        st.session_state[f"reverted_{cluster_hash}"] = True
-                        sync_key = f"sync_{cluster_hash}"
-                        if sync_key in st.session_state:
-                            del st.session_state[sync_key]
-                        st.rerun()
+                        # This function handles the history log, wipes the sync key, 
+                        # scrubs assigned tasks, and moves it to Dispatch in one go.
+                        scrub_and_revoke_cluster(cluster_hash, ic_name, pod_name, "Declined")
 # --- START ---
 if "ic_df" not in st.session_state:
     try:
