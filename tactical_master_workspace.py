@@ -217,116 +217,96 @@ button[kind="secondary"] {{
 }}
 
 /* =========================================
-   EXPANDER & LAYOUT TIGHTENING (SQUASHED GAPS & CENTERED)
+   THE DEFINITIVE ALIGNMENT & PILL FIX
    ========================================= */
 
-/* 1. MAIN EXPANDER CONTAINER */
+/* 1. MATCH HEIGHTS & SQUASH GAPS */
 div[data-testid="stExpander"] {{ 
     border: 1px solid #cbd5e1 !important; 
     border-radius: 10px !important; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
-    margin-bottom: 0px !important; /* Kills internal margin */
+    margin-bottom: 0px !important; 
     background-color: #ffffff !important;
     overflow: hidden !important;
 }}
 
-/* 3. MATCH HEIGHTS & CENTER TEXT */
 div[data-testid="stExpander"] details summary {{
-    height: 48px !important;      /* Exact match for Revoke button */
+    height: 48px !important;      
     min-height: 48px !important;
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
+    padding: 0 10px !important;
     display: flex !important;
     align-items: center !important;
 }}
 
 div[data-testid="stExpander"] details summary p {{
     margin: 0 !important; 
-    line-height: 48px !important; /* Forces text to dead center vertically */
+    line-height: 48px !important; 
 }}
 
-/* This targets the clickable header part specifically */
-div[data-testid="stExpander"] details summary {{
-    height: 48px !important;      
-    min-height: 48px !important;
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
-    display: flex !important;
-    align-items: center !important;
-    line-height: 48px !important; /* <--- ADD THIS LINE SPECIFICALLY */
-}}
-
-/* 4. PERFECT ROW ALIGNMENT */
-div[data-testid="stHorizontalBlock"]:has(.flush-hook) {{
-    align-items: flex-start !important; /* Anchors the button to the top */
+/* Pull rows tight together */
+div.element-container:has(div[data-testid="stExpander"]),
+div.element-container:has(div[data-testid="stHorizontalBlock"]:has(.expander-hook)) {{
+    margin-bottom: -15px !important;
 }}
 
 /* 2. FLUSH BUTTON MECHANICS */
+div[data-testid="stHorizontalBlock"]:has(.flush-hook) {{
+    align-items: flex-start !important;
+}}
+
 div[data-testid="stColumn"]:has(.flush-hook) {{
     padding-left: 0px !important;
 }}
 
 div[data-testid="stColumn"]:has(.flush-hook) button {{
-    width: calc(100% + 1rem) !important; /* Bridges the column gap */
+    width: calc(100% + 1rem) !important;
     margin-left: -1rem !important; 
     border-top-left-radius: 0px !important;
     border-bottom-left-radius: 0px !important;
-    border-left: none !important; /* Removes the double border */
+    border-left: none !important;
     height: 48px !important;
 }}
 
-/* Square off the right side of the expander so it meets the button */
 div[data-testid="stColumn"]:has(.expander-hook) div[data-testid="stExpander"] {{
     border-top-right-radius: 0px !important;
     border-bottom-right-radius: 0px !important;
     border-right: none !important; 
 }}
 
-/* Header text color */
-div[data-testid="stExpander"] details summary p {{ 
-    color: #000000 !important; 
-    font-weight: 800 !important; 
-    font-size: 0.95rem !important;
+/* 3. ALIGN COLUMNS (COLLAPSE HOOKS) */
+div.element-container:has(.dispatch-tabs-hook),
+div.element-container:has(.awaiting-tabs-hook),
+div.element-container:has(.expander-hook),
+div.element-container:has(.flush-hook) {{
+    position: absolute !important;
+    visibility: hidden !important;
+    height: 0px !important;
+    margin: 0px !important;
+    padding: 0px !important;
 }}
 
-/* 🚀 FIX: STOP THE DARK HOVER & BLACK CLICK FILL */
-div[data-testid="stExpander"] details summary {{
-    background-color: #ffffff !important; /* Force base color */
-    transition: background-color 0.2s ease !important;
+/* 4. SURGICAL TAB BYPASS (PILLS) */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{
+    gap: 12px !important;
+    background: transparent !important;
 }}
 
-div[data-testid="stExpander"] details summary:hover {{
-    background-color: #fcfaff !important; /* Very light purple on hover */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
+    border-radius: 30px !important;
+    border: 2px solid transparent !important;
+    padding: 8px 18px !important;
+    height: auto !important;
+    min-height: 0 !important;
 }}
 
-/* This targets the exact moment you click it */
-div[data-testid="stExpander"] details summary:active {{
-    background-color: #ffffff !important; 
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{
+    display: none !important;
 }}
 
-/* This removes the "Black/Gray Box" focus state that stays after clicking */
-div[data-testid="stExpander"] details summary:focus, 
-div[data-testid="stExpander"] details summary:focus-visible {{
-    background-color: #ffffff !important;
-    outline: none !important;
-    box-shadow: none !important;
-}}
-
-/* Ensure the text stays visible during the click */
-div[data-testid="stExpander"] details summary:hover p,
-div[data-testid="stExpander"] details summary:active p,
-div[data-testid="stExpander"] details summary:focus p {{
-    color: #633094 !important;
-}}
-
-label, div[data-testid="stWidgetLabel"] p {{ color: #000000 !important; font-weight: 600 !important; }}
-
-/* MAP & FOLIUM */
-iframe[title="streamlit_folium.st_folium"] {{
-    border-radius: 15px !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
-}}
-.stFolium {{ background: transparent !important; }}
+/* Pill Colors */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{ border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
 
 /* =========================================
    UNIFIED HOVER & CLICK EFFECTS
@@ -365,7 +345,7 @@ div[data-testid="stExpander"] details summary:active,
     box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }}
 
-/* Smooth transitions for everything */
+/* 4. SMOOTH TRANSITIONS FOR EVERYTHING */
 div[data-testid="stExpander"],
 div[data-testid="stExpander"] details summary,
 .pod-card-pill,
@@ -375,138 +355,6 @@ button[kind="secondary"],
 div.refresh-btn-container > div > button,
 .stTabs [data-baseweb="tab"] {{
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-}}
-
-/* =========================================
-   FIX NESTED TABS (PILL SHAPE & COLORS)
-   ========================================= */
-/* Un-glue the right side tabs to look like separate pills */
-div[data-testid="stColumn"] div[data-baseweb="tab-list"] {{
-    gap: 12px !important;
-    background: transparent !important;
-    border-bottom: none !important;
-}}
-
-/* 3. INDIVIDUAL ROUNDED PILLS */
-div[data-testid="stColumn"] div[data-baseweb="tab"] {{
-    border-radius: 30px !important;
-    /* Explicitly round every corner to break the segmented glue */
-    border-top-left-radius: 30px !important;
-    border-bottom-left-radius: 30px !important;
-    border-top-right-radius: 30px !important;
-    border-bottom-right-radius: 30px !important;
-    padding: 8px 18px !important;
-    margin: 0 4px !important; /* Adds a tiny gap between pills */
-    border: 2px solid transparent !important;
-    height: auto !important;
-}}
-
-/* Hide the native grey connecting slider */
-div[data-testid="stColumn"] div[data-baseweb="tab-highlight"] {{
-    display: none !important;
-}}
-
-/* LEFT COLUMN COLORS: Ready (Green) & Flagged (Red) */
-div[data-testid="stColumn"]:nth-child(1) div[data-baseweb="tab"]:nth-child(1) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
-div[data-testid="stColumn"]:nth-child(1) div[data-baseweb="tab"]:nth-child(2) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
-
-/* RIGHT COLUMN COLORS: Sent (Blue), Accepted (Green), Declined (Red) */
-div[data-testid="stColumn"]:nth-child(2) div[data-baseweb="tab"]:nth-child(1) {{ border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; }}
-div[data-testid="stColumn"]:nth-child(2) div[data-baseweb="tab"]:nth-child(2) {{ border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; }}
-div[data-testid="stColumn"]:nth-child(2) div[data-baseweb="tab"]:nth-child(3) {{ border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; }}
-
-/* Active Pill Glow */
-div[data-testid="stColumn"] div[data-baseweb="tab"][aria-selected="true"] {{
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.08) !important;
-}}
-
-/* =========================================
-   FIX VERTICAL OFFSET (Hide the Invisible Hooks)
-   ========================================= */
-div.element-container:has(.dispatch-tabs-hook),
-div.element-container:has(.awaiting-tabs-hook),
-div.element-container:has(.expander-hook),
-div.element-container:has(.flush-hook) {{
-    position: absolute !important;
-    visibility: hidden !important;
-    height: 0px !important;
-    margin: 0px !important;
-    padding: 0px !important;
-}}
-
-/* SURGICAL BYPASS FOR AWAITING CONFIRMATION TABS */
-
-/* 1. Target the 'Awaiting' container to add a gap between pills */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{
-    gap: 12px !important;
-    background: transparent !important;
-}}
-
-/* 2. Target the individual tabs to force all 4 corners to round */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
-    border-radius: 30px !important;
-    border-top-left-radius: 30px !important;
-    border-bottom-left-radius: 30px !important;
-    border-top-right-radius: 30px !important;
-    border-bottom-right-radius: 30px !important;
-    margin: 0 !important;
-    padding: 8px 18px !important;
-    border: 2px solid transparent !important;
-    height: auto !important;
-    min-height: 0 !important;
-}}
-
-/* 3. Delete the grey underline highlight that connects them */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{
-    display: none !important;
-}}
-
-/* 4. Apply status colors specifically to these pills */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(1) {{
-    border-color: #3b82f6 !important; color: #1e3a8a !important; background-color: #f0f7ff !important; /* Sent */
-}}
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(2) {{
-    border-color: #22c55e !important; color: #064e3b !important; background-color: #f0fdf4 !important; /* Accepted */
-}}
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{
-    border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; /* Declined */
-}}
-
-/* 1. COLLAPSE INVISIBLE HOOKS TO ALIGN COLUMNS */
-div.element-container:has(.dispatch-tabs-hook),
-div.element-container:has(.awaiting-tabs-hook),
-div.element-container:has(.expander-hook),
-div.element-container:has(.flush-hook) {{
-    position: absolute !important;
-    visibility: hidden !important;
-    height: 0px !important;
-    margin: 0px !important;
-    padding: 0px !important;
-}}
-
-/* 2. SURGICAL BYPASS FOR AWAITING CONFIRMATION TABS */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{
-    gap: 12px !important;
-    background: transparent !important;
-}}
-
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
-    border-radius: 30px !important;
-    border-top-left-radius: 30px !important;
-    border-bottom-left-radius: 30px !important;
-    border-top-right-radius: 30px !important;
-    border-bottom-right-radius: 30px !important;
-    margin: 0 !important;
-    padding: 8px 18px !important;
-    border: 2px solid transparent !important;
-    height: auto !important;
-    min-height: 0 !important;
-}}
-
-/* Kill the native grey underline slider */
-div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{
-    display: none !important;
 }}
 
 </style>
