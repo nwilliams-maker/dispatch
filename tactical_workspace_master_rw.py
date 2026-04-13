@@ -10,16 +10,19 @@ from datetime import datetime, timedelta
 from streamlit_folium import st_folium
 import folium
 import threading
-import os # Make sure this is at the very top with your other imports
+import os  # Ensure this is at the very top of your file!
 
 # --- CONFIG & CREDENTIALS ---
-# This looks in Streamlit Secrets OR directly at Railway's Environment Variables
+# Using .get() prevents the "SecretNotFoundError" crash
 ONFLEET_KEY = st.secrets.get("ONFLEET_KEY") or os.environ.get("ONFLEET_KEY")
 GOOGLE_MAPS_KEY = st.secrets.get("GOOGLE_MAPS_KEY") or os.environ.get("GOOGLE_MAPS_KEY")
 
-# This stops the red error box and gives you a helpful message instead
-if not ONFLEET_KEY or not GOOGLE_MAPS_KEY:
-    st.error("🔑 API Keys not found in Railway Variables. Check your 'Variables' tab!")
+if not ONFLEET_KEY:
+    st.error("Missing ONFLEET_KEY. Please check Railway Variables.")
+    st.stop()
+
+if not GOOGLE_MAPS_KEY:
+    st.error("Missing GOOGLE_MAPS_KEY. Please check Railway Variables.")
     st.stop()
 
 PORTAL_BASE_URL = "https://nwilliams-maker.github.io/Route-Authorization-Portal/portal-v2.html"
