@@ -230,14 +230,19 @@ div[data-testid="stExpander"] {{
     overflow: hidden !important;
 }}
 
-/* 1. MATCH HEIGHTS: Lock EVERY Expander Header to exactly match the button */
-div[data-testid="stExpander"] {{ 
-    border: 1px solid #cbd5e1 !important; 
-    border-radius: 10px !important; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
-    margin-bottom: 0px !important; 
-    background-color: #ffffff !important;
-    overflow: hidden !important;
+/* 3. MATCH HEIGHTS & CENTER TEXT */
+div[data-testid="stExpander"] details summary {{
+    height: 48px !important;      /* Exact match for Revoke button */
+    min-height: 48px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    display: flex !important;
+    align-items: center !important;
+}}
+
+div[data-testid="stExpander"] details summary p {{
+    margin: 0 !important; 
+    line-height: 48px !important; /* Forces text to dead center vertically */
 }}
 
 /* This targets the clickable header part specifically */
@@ -430,18 +435,6 @@ div.element-container:has(.flush-hook) {{
     padding: 0px !important;
 }}
 
-/* 1. COLLAPSE INVISIBLE HOOKS TO ALIGN COLUMNS */
-div.element-container:has(.dispatch-tabs-hook),
-div.element-container:has(.awaiting-tabs-hook),
-div.element-container:has(.expander-hook),
-div.element-container:has(.flush-hook) {{
-    position: absolute !important;
-    visibility: hidden !important;
-    height: 0px !important;
-    margin: 0px !important;
-    padding: 0px !important;
-}}
-
 /* SURGICAL BYPASS FOR AWAITING CONFIRMATION TABS */
 
 /* 1. Target the 'Awaiting' container to add a gap between pills */
@@ -478,6 +471,42 @@ div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-bas
 }}
 div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"]:nth-of-type(3) {{
     border-color: #ef4444 !important; color: #7f1d1d !important; background-color: #fef2f2 !important; /* Declined */
+}}
+
+/* 1. COLLAPSE INVISIBLE HOOKS TO ALIGN COLUMNS */
+div.element-container:has(.dispatch-tabs-hook),
+div.element-container:has(.awaiting-tabs-hook),
+div.element-container:has(.expander-hook),
+div.element-container:has(.flush-hook) {{
+    position: absolute !important;
+    visibility: hidden !important;
+    height: 0px !important;
+    margin: 0px !important;
+    padding: 0px !important;
+}}
+
+/* 2. SURGICAL BYPASS FOR AWAITING CONFIRMATION TABS */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-list"] {{
+    gap: 12px !important;
+    background: transparent !important;
+}}
+
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab"] {{
+    border-radius: 30px !important;
+    border-top-left-radius: 30px !important;
+    border-bottom-left-radius: 30px !important;
+    border-top-right-radius: 30px !important;
+    border-bottom-right-radius: 30px !important;
+    margin: 0 !important;
+    padding: 8px 18px !important;
+    border: 2px solid transparent !important;
+    height: auto !important;
+    min-height: 0 !important;
+}}
+
+/* Kill the native grey underline slider */
+div.element-container:has(.awaiting-tabs-hook) + div.element-container [data-baseweb="tab-highlight"] {{
+    display: none !important;
 }}
 
 </style>
