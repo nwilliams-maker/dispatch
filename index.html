@@ -1216,20 +1216,19 @@
                 clearTimeout(timeoutId);
                 const result = await response.json();
                 
-                if (result.success) {
+               if (result.success) {
                     const routeId = result.routeId; 
                     const baseUrl = window.location.href.split('?')[0]; 
                     const tinyLink = `${baseUrl}?route=${routeId}`;
-                    
+    
                     const s = `Action Required: Terraboost Route Request | WO #${d.wo}`;
                     let emailDate = d.due ? `${d.due.split('-')[1]}/${d.due.split('-')[2]}/${d.due.split('-')[0]}` : 'N/A';
-                    
+    
                     const dispatcherEmail = document.getElementById('d_email').value;
                     let notesText = d.notes ? `\n- Special Instructions: ${d.notes}` : "";
-                    
-                    const b = `Dear ${d.icn},\n\nRoute Summary:\n- Due Date: ${emailDate}${notesText}\n- Locations: ${d.lCnt}\n- Tasks: ${d.tCnt}\n- Kiosk Installs: ${d.kCnt}\n- Digital Services: ${d.dCnt}\n- Est. Drive Time: ${d.time}\n- Mileage: ${d.mi} Miles\n- Compensation: $${d.comp}\n\n ⚠️ ACTION REQUIRED:
-You must confirm by selecting 'Accept' or 'Decline' directly through the portal link. Your response updates our dispatch board in real-time so we can finalize the schedule.: ${tinyLink}\n\nSent by: ${dispatcherEmail}`;
-                    
+    
+                    const b = `Dear ${d.icn},\n\nRoute Summary:\n- Due Date: ${emailDate}${notesText}\n- Locations: ${d.lCnt}\n- Tasks: ${d.tCnt}\n- Kiosk Installs: ${d.kCnt}\n- Digital Services: ${d.dCnt}\n- Est. Drive Time: ${d.time}\n- Mileage: ${d.mi} Miles\n- Compensation: $${d.comp}\n\n⚠️ ACTION REQUIRED:\nYou must confirm by selecting 'Accept' or 'Decline' directly through the portal link. Your response updates our dispatch board in real-time so we can finalize the schedule.\n\nReview & Respond Here: ${tinyLink}\n\nSent by: ${dispatcherEmail}`;
+    
                     window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(d.ice)}&su=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`, '_blank');
                     
                     allOnfleetMarkers.forEach(marker => {
