@@ -6,14 +6,22 @@ import pandas as pd
 import time
 import hashlib
 import json
+import os  # <--- Add this import!
 from datetime import datetime, timedelta
 from streamlit_folium import st_folium
 import folium
 import threading
 
 # --- CONFIG & CREDENTIALS ---
-ONFLEET_KEY = st.secrets["ONFLEET_KEY"]
-GOOGLE_MAPS_KEY = st.secrets["GOOGLE_MAPS_KEY"]
+# This looks in Streamlit Secrets AND Railway Environment Variables as a backup
+ONFLEET_KEY = st.secrets.get("ONFLEET_KEY") or os.environ.get("ONFLEET_KEY")
+GOOGLE_MAPS_KEY = st.secrets.get("GOOGLE_MAPS_KEY") or os.environ.get("GOOGLE_MAPS_KEY")
+
+# Safety Check: If both are missing, show a helpful message instead of crashing
+if not ONFLEET_KEY or not GOOGLE_MAPS_KEY:
+    st.error("🔑 API Keys not found! Make sure you added them to Railway Variables.")
+    st.stop()
+
 PORTAL_BASE_URL = "https://nwilliams-maker.github.io/Route-Authorization-Portal/portal-v2.html"
 GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbynAIziubArSQ0hVGTvJMpk11a9yLP0kNcSmGpcY7GDNRT25Po5p92K3EDslx9VycKC/exec"
 IC_SHEET_URL = "https://docs.google.com/spreadsheets/d/1y6wX0x93iDc3gdK_nZKLD-2QcGkUHkcM75u90ffRO6k/edit#gid=0"
