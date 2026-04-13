@@ -220,34 +220,39 @@ button[kind="secondary"] {{
    EXPANDER & LAYOUT TIGHTENING (SQUASHED GAPS & CENTERED)
    ========================================= */
 
-/* 1. SQUASH VERTICAL GAPS: Kill Streamlit's default 16px gap between rows */
-div.element-container:has(div[data-testid="stExpander"]),
-div.element-container:has(div[data-testid="stHorizontalBlock"]:has(.flush-hook)) {{
-    margin-bottom: -12px !important; 
-}}
-
-/* Main Expander Container */
+/* 1. MAIN EXPANDER CONTAINER */
 div[data-testid="stExpander"] {{ 
     border: 1px solid #cbd5e1 !important; 
     border-radius: 10px !important; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
-    margin-bottom: 0px !important;
+    margin-bottom: 0px !important; /* Kills internal margin */
     background-color: #ffffff !important;
     overflow: hidden !important;
 }}
 
-/* 🌟 AGGRESSIVE VERTICAL GAP SQUASH */
+/* 2. MATCH HEIGHTS: Lock Expander Header to match the Button */
+div[data-testid="stExpander"] details summary {{
+    height: 48px !important;
+    min-height: 48px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+}}
+div[data-testid="stExpander"] details summary p {{
+    margin: 0 !important; /* Centers text vertically */
+}}
+
+/* 3. SQUASH VERTICAL GAPS (Consolidated & Cleaned) */
 div.element-container:has(div[data-testid="stExpander"]),
 div[data-testid="stHorizontalBlock"]:has(.expander-hook) {{
     margin-bottom: -14px !important;
 }}
 
-/* 3. PERFECT ROW ALIGNMENT */
+/* 4. PERFECT ROW ALIGNMENT */
 div[data-testid="stHorizontalBlock"]:has(.flush-hook) {{
-    align-items: flex-start !important; /* Anchors the button to the top so it doesn't stretch weirdly when the expander opens */
+    align-items: flex-start !important; /* Anchors the button to the top */
 }}
 
-/* 4. FLUSH BUTTON MECHANICS (Closes the gap between Card and Button) */
+/* 5. FLUSH BUTTON MECHANICS (Closes the gap between Card and Button) */
 div[data-testid="stColumn"]:has(.flush-hook) {{
     padding-left: 0px !important; /* Kills the column gap */
 }}
@@ -257,7 +262,7 @@ div[data-testid="stColumn"]:has(.flush-hook) button {{
     margin-left: -5px !important; /* Pulls it tight against the expander */
     border-top-left-radius: 0px !important;
     border-bottom-left-radius: 0px !important;
-    height: 48px !important; /* Locks height to perfectly match the collapsed expander */
+    height: 48px !important; /* Locks height to perfectly match expander */
 }}
 
 /* Square off the right side of the expander to connect to the button */
